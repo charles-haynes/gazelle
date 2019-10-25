@@ -26,7 +26,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -739,8 +738,6 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 	return torrents, err
 }
 
-var punctRE = regexp.MustCompile("[][~!@#$%^&*()_+`={}|\\\\:\";'<>?,./ -]+")
-
 func (src Torrent) UpdateCross(tx *sqlx.Tx, dst Torrent) {
 	if dst.ID == 0 {
 		_, err := tx.Exec(`
@@ -757,7 +754,7 @@ VALUES
 (?,?,?,?,datetime("now")),
 (?,?,?,?,datetime("now"))
 ON CONFLICT (tracker, torrentid) DO UPDATE SET
-other = excluded.other, 
+other = excluded.other,
 otherid = excluded.otherid,
 time=excluded.time`,
 		src.name, src.ID, dst.name, dst.ID,
