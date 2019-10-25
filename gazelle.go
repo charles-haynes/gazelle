@@ -256,7 +256,7 @@ type Torrent struct {
 }
 
 func (t Torrent) ShortName() string {
-	return fmt.Sprintf("%s-%d", t.Tracker, t.ID)
+	return fmt.Sprintf("%s-%d", t.Tracker.Name, t.ID)
 }
 
 func (t *Torrent) Fill(tx *sqlx.Tx) error {
@@ -365,7 +365,9 @@ func (g Group) Update(tx *sqlx.Tx) error {
 func NewGroupStruct(tracker Tracker, gs whatapi.GroupStruct) (g Group, err error) {
 	al := NewMusicInfo(tracker, gs.MusicInfo)
 	gtime, err := time.Parse("2006-01-02 15:04:05", gs.Time)
-	return g, err
+	if err != nil {
+		return g, err
+	}
 	g = Group{
 		Artists:         al,
 		WikiImage:       &gs.WikiImageF,
@@ -508,8 +510,8 @@ func (t *Torrent) String() string {
 			NullableString(t.RemasterCatalogueNumber),
 			t.RemasterTitle)
 	}
-	return fmt.Sprintf("%s-%d: %s - %s (%04d) [%s %s %s]%s [%s]",
-		t.Tracker.Name, t.ID,
+	return fmt.Sprintf("%s: %s - %s (%04d) [%s %s %s]%s [%s]",
+		t.ShortName(),
 		strings.Join(t.Names(), ","), t.Group.Name, t.Year,
 		t.Media, t.Format, t.Encoding,
 		remaster, t.ReleaseType())
