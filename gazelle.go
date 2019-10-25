@@ -38,10 +38,10 @@ import (
 
 type Tracker struct {
 	whatapi.WhatAPI
-	name         string
-	other        string
-	path         string
-	host         string
+	Name         string
+	Other        string
+	Path         string
+	Host         string
 	conf         string
 	releaseTypes map[int64]string
 	categories   []string
@@ -56,20 +56,20 @@ type Artist struct {
 var updatedArtists = map[string]map[int64]struct{}{}
 
 func (a Artist) Update(tx *sqlx.Tx, tracker Tracker) error {
-	if _, ok := updatedArtists[tracker.name]; ok {
-		if _, ok := updatedArtists[tracker.name][a.ID]; ok {
+	if _, ok := updatedArtists[tracker.Name]; ok {
+		if _, ok := updatedArtists[tracker.Name][a.ID]; ok {
 			return nil
 		}
 	} else {
-		updatedArtists[tracker.name] = map[int64]struct{}{}
+		updatedArtists[tracker.Name] = map[int64]struct{}{}
 	}
 	_, err := tx.Exec(
 		`INSERT OR REPLACE INTO artists (tracker,id,name) VALUES (?,?,?)`,
-		tracker.name, a.ID, a.Name)
+		tracker.Name, a.ID, a.Name)
 	if err != nil {
 		return err
 	}
-	updatedArtists[tracker.name][a.ID] = struct{}{}
+	updatedArtists[tracker.Name][a.ID] = struct{}{}
 	return nil
 }
 
@@ -283,7 +283,7 @@ type grp struct {
 var updatedGroups = map[grp]struct{}{}
 
 func (g Group) Update(tx *sqlx.Tx) error {
-	if _, ok := updatedGroups[grp{g.Tracker.name, g.ID}]; ok {
+	if _, ok := updatedGroups[grp{g.Tracker.Name, g.ID}]; ok {
 		return nil
 	}
 	_, err := tx.Exec(
@@ -309,7 +309,7 @@ func (g Group) Update(tx *sqlx.Tx) error {
 			`categoryid=excluded.categoryid,`+
 			`categoryname=excluded.categoryname,`+
 			`time=excluded.time`,
-		g.Tracker.name,      // tracker
+		g.Tracker.Name,      // tracker
 		g.WikiBody,          // wikibody
 		g.WikiImage,         // wikiimage
 		g.ID,                // id
@@ -338,7 +338,7 @@ func (g Group) Update(tx *sqlx.Tx) error {
 		return err
 	}
 
-	updatedGroups[grp{g.Tracker.name, g.ID}] = struct{}{}
+	updatedGroups[grp{g.Tracker.Name, g.ID}] = struct{}{}
 	return nil
 }
 
@@ -372,7 +372,7 @@ func (t Torrent) UpdateFiles(tx *sqlx.Tx) error {
 			`?,`+ // torrentid
 			`?,`+ // name
 			`?)`, // size
-			t.Tracker.name, t.ID, f.Name(), f.Size)
+			t.Tracker.Name, t.ID, f.Name(), f.Size)
 		if err != nil {
 			return err
 		}
@@ -383,12 +383,12 @@ func (t Torrent) UpdateFiles(tx *sqlx.Tx) error {
 var updatedTorrents = map[string]map[int]struct{}{}
 
 func (t Torrent) Update(tx *sqlx.Tx) error {
-	if _, ok := updatedTorrents[t.Tracker.name]; ok {
-		if _, ok := updatedTorrents[t.Tracker.name][t.ID]; ok {
+	if _, ok := updatedTorrents[t.Tracker.Name]; ok {
+		if _, ok := updatedTorrents[t.Tracker.Name][t.ID]; ok {
 			return nil
 		}
 	} else {
-		updatedTorrents[t.Tracker.name] = map[int]struct{}{}
+		updatedTorrents[t.Tracker.Name] = map[int]struct{}{}
 	}
 	if err := t.Group.Update(tx); err != nil {
 		return err
@@ -422,7 +422,7 @@ func (t Torrent) Update(tx *sqlx.Tx) error {
 		`?,`+ // filepath
 		`?,`+ // userid
 		`?)`, // username
-		t.Tracker.name,            // tracker
+		t.Tracker.Name,            // tracker
 		t.ID,                      // id
 		t.Group.ID,                // groupid
 		t.Hash,                    // hash
@@ -456,16 +456,16 @@ func (t Torrent) Update(tx *sqlx.Tx) error {
 	if err := t.UpdateFiles(tx); err != nil {
 		return err
 	}
-	updatedTorrents[t.Tracker.name][t.ID] = struct{}{}
+	updatedTorrents[t.Tracker.Name][t.ID] = struct{}{}
 	return nil
 }
 
 var trackers = map[string]Tracker{
 	"red": {
-		name:  "red",
-		other: "orp",
-		path:  "redacted",
-		host:  "harp.ceh.bz",
+		Name:  "red",
+		Other: "orp",
+		Path:  "redacted",
+		Host:  "harp.ceh.bz",
 		conf:  "/home/haynes/.seed-red.yaml",
 		releaseTypes: map[int64]string{
 			1:  "Album",
@@ -496,10 +496,10 @@ var trackers = map[string]Tracker{
 		tokenSize: 500 * 1000 * 1000,
 	},
 	"orp": {
-		name:  "orp",
-		other: "red",
-		path:  "orpheus",
-		host:  "fife.ceh.bz",
+		Name:  "orp",
+		Other: "red",
+		Path:  "orpheus",
+		Host:  "fife.ceh.bz",
 		conf:  "/home/haynes/.seed-orp.yaml",
 		releaseTypes: map[int64]string{
 			1:  "Album",
@@ -540,7 +540,7 @@ func (t *Torrent) String() string {
 			t.RemasterTitle)
 	}
 	return fmt.Sprintf("%s-%d: %s - %s (%04d) [%s %s %s]%s [%s]",
-		t.Tracker.name, t.ID,
+		t.Tracker.Name, t.ID,
 		strings.Join(t.Names(), ","), t.Group.Name, t.Year,
 		t.Media, t.Format, t.Encoding,
 		remaster, t.ReleaseType())
@@ -744,7 +744,7 @@ func (src Torrent) UpdateCross(tx *sqlx.Tx, dst Torrent) {
 INSERT INTO crosses
 VALUES(?,?,NULL,NULL,datetime("now"))
 ON CONFLICT (tracker, torrentid) DO NOTHING`,
-			src.name, src.ID)
+			src.Name, src.ID)
 		DieIfError(err)
 		return
 	}
@@ -757,8 +757,8 @@ ON CONFLICT (tracker, torrentid) DO UPDATE SET
 other = excluded.other,
 otherid = excluded.otherid,
 time=excluded.time`,
-		src.name, src.ID, dst.name, dst.ID,
-		dst.name, dst.ID, src.name, src.ID)
+		src.Name, src.ID, dst.Name, dst.ID,
+		dst.Name, dst.ID, src.Name, src.ID)
 	DieIfError(err)
 }
 
