@@ -93,7 +93,7 @@ func (t *Torrent) GetArtists(db *sqlx.DB) {
 		Role string `db:"role"`
 	}
 	DieIfError(db.Select(&artists, `
-SELECT gag.tracker, ga.id, ga.name, gag.role
+SELECT ga.id, ga.name, gag.role
 FROM artists_groups AS gag
 JOIN artists AS ga ON gag.tracker=ga.tracker AND gag.artistid=ga.id
 WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID))
