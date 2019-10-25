@@ -38,7 +38,7 @@ import (
 
 type Tracker struct {
 	whatapi.WhatAPI
-	Name         string
+	Name         string `db:"tracker"`
 	Other        string
 	Path         string
 	Host         string
