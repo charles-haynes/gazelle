@@ -97,6 +97,9 @@ SELECT ga.id, ga.name, gag.role
 FROM artists_groups AS gag
 JOIN artists AS ga ON gag.tracker=ga.tracker AND gag.artistid=ga.id
 WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID))
+	if t.Artists.Artists == nil {
+		t.Artists.Artists = map[string][]Artist{}
+	}
 	for _, a := range artists {
 		t.Artists.Artists[a.Role] = append(
 			t.Artists.Artists[a.Role], Artist{a.ID, a.Name})
