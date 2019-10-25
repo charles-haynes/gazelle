@@ -92,14 +92,11 @@ func (t *Torrent) GetArtists(db *sqlx.DB) {
 		Name string `db:"name"`
 		Role string `db:"role"`
 	}
-	err := db.Select(&artists, `
+	DieIfError(db.Select(&artists, `
 SELECT gag.tracker, ga.id, ga.name, gag.role
 FROM artists_groups AS gag
 JOIN artists AS ga ON gag.tracker=ga.tracker AND gag.artistid=ga.id
-WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker, t.Group.ID)
-	if err != nil {
-		Fatal(err)
-	}
+WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID))
 	for _, a := range artists {
 		t.Artists.Artists[a.Role] = append(
 			t.Artists.Artists[a.Role], Artist{a.ID, a.Name})
@@ -488,7 +485,7 @@ func (t *Torrent) GetFiles(db *sqlx.DB) {
 	DieIfError(db.Select(&f, `
 SELECT name AS namef, size
 FROM files
-WHERE tracker=? AND torrentid=?`, t.Tracker, t.ID))
+WHERE tracker=? AND torrentid=?`, t.Tracker.Name, t.ID))
 	if int64(len(f)) == t.FileCount {
 		t.Files = f
 		return
