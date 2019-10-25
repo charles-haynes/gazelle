@@ -1,4 +1,4 @@
-module gazelle
+module github.com/charles-haynes/gazelle
 
 go 1.13
 
