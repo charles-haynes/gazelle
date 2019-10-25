@@ -42,10 +42,10 @@ type Tracker struct {
 	Other        string
 	Path         string
 	Host         string
-	conf         string
-	releaseTypes map[int64]string
-	categories   []string
-	tokenSize    int64 // torrents bigger than this, try to use a token
+	Conf         string
+	ReleaseTypes map[int64]string
+	Categories   map[int64]string
+	TokenSize    int64 // torrents bigger than this, try to use a token
 }
 
 type Artist struct {
@@ -207,7 +207,7 @@ type Group struct {
 	CatalogueNumber *string   `db:"cataloguenumber"`
 	ReleaseTypeF    int64     `db:"releasetype"`
 	CategoryID      int64     `db:"categoryid"`
-	CategoryName    string    `db:"categorynamee"`
+	CategoryName    string    `db:"categoryname"`
 	Time            time.Time `db:"time"`
 	VanityHouse     bool      `db:"vanityhouse"`
 	WikiImage       *string   `db:"wikiimage"`
@@ -216,7 +216,7 @@ type Group struct {
 }
 
 func (g Group) ReleaseType() string {
-	if r, ok := g.releaseTypes[g.ReleaseTypeF]; ok {
+	if r, ok := g.ReleaseTypes[g.ReleaseTypeF]; ok {
 		return r
 	}
 	return "Unknown"
@@ -497,76 +497,6 @@ WHERE tracker=? AND torrentid=?`, t.Tracker, t.ID))
 	DieIfError(err)
 	DieIfError(t.Fill(tx))
 	DieIfError(tx.Commit())
-}
-
-var trackers = map[string]Tracker{
-	"red": {
-		Name:  "red",
-		Other: "orp",
-		Path:  "redacted",
-		Host:  "harp.ceh.bz",
-		conf:  "/home/haynes/.seed-red.yaml",
-		releaseTypes: map[int64]string{
-			1:  "Album",
-			3:  "Soundtrack",
-			5:  "EP",
-			6:  "Anthology",
-			7:  "Compilation",
-			9:  "Single",
-			11: "Live album",
-			13: "Remix",
-			14: "Bootleg",
-			15: "Interview",
-			16: "Mixtape",
-			17: "Demo",
-			18: "Concert Recording",
-			19: "DJ Mix",
-		},
-		categories: []string{
-			"",
-			"Music",
-			"Application",
-			"E-Book",
-			"Audiobook",
-			"E-Learning Video",
-			"Comedy",
-			"Comic",
-		},
-		tokenSize: 500 * 1000 * 1000,
-	},
-	"orp": {
-		Name:  "orp",
-		Other: "red",
-		Path:  "orpheus",
-		Host:  "fife.ceh.bz",
-		conf:  "/home/haynes/.seed-orp.yaml",
-		releaseTypes: map[int64]string{
-			1:  "Album",
-			3:  "Soundtrack",
-			5:  "EP",
-			6:  "Anthology",
-			7:  "Compilation",
-			9:  "Single",
-			11: "Live album",
-			13: "Remix",
-			14: "Bootleg",
-			15: "Interview",
-			16: "Mixtape",
-			17: "DJ Mix",
-			18: "Concert recording",
-		},
-		categories: []string{
-			"",
-			"Music",
-			"Application",
-			"E-Book",
-			"Audiobook",
-			"E-Learning Video",
-			"Comedy",
-			"Comic",
-		},
-		tokenSize: 100 * 1000 * 1000,
-	},
 }
 
 func (t *Torrent) String() string {
