@@ -715,7 +715,7 @@ func (src Torrent) UpdateCross(tx *sqlx.Tx, dst Torrent) {
 INSERT INTO crosses
 VALUES(?,?,NULL,NULL,datetime("now"))
 ON CONFLICT (tracker, torrentid) DO NOTHING`,
-			src.Name, src.ID)
+			src.Tracker.Name, src.ID)
 		DieIfError(err)
 		return
 	}
@@ -728,8 +728,8 @@ ON CONFLICT (tracker, torrentid) DO UPDATE SET
 other = excluded.other,
 otherid = excluded.otherid,
 time=excluded.time`,
-		src.Name, src.ID, dst.Name, dst.ID,
-		dst.Name, dst.ID, src.Name, src.ID)
+		src.Tracker.Name, src.ID, dst.Tracker.Name, dst.ID,
+		dst.Tracker.Name, dst.ID, src.Tracker.Name, src.ID)
 	DieIfError(err)
 }
 
