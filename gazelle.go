@@ -86,6 +86,26 @@ func (a Artists) Names() []string {
 	return s
 }
 
+func (t *Torrent) GetArtists(db *sqlx.DB) {
+	var artists []struct {
+		ID   int64  `db:"id"`
+		Name string `db:"name"`
+		Role string `db:"role"`
+	}
+	err := db.Select(&artists, `
+SELECT gag.tracker, ga.id, ga.name, gag.role
+FROM artists_groups AS gag
+JOIN artists AS ga ON gag.tracker=ga.tracker AND gag.artistid=ga.id
+WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker, t.Group.ID)
+	if err != nil {
+		Fatal(err)
+	}
+	for _, a := range artists {
+		t.Artists.Artists[a.Role] = append(
+			t.Artists.Artists[a.Role], Artist{a.ID, a.Name})
+	}
+}
+
 func (a Artists) DisplayName() string {
 	switch len(a.Artists["Artist"]) {
 	case 0:
@@ -251,7 +271,7 @@ func (t *Torrent) Fill(tx *sqlx.Tx) error {
 		return err
 	}
 	t.Update(tx)
-	fmt.Printf("#     fill torrent took %s\n", time.Since(start))
+	fmt.Printf("#     fill took %s\n", time.Since(start))
 	return nil
 }
 
@@ -458,6 +478,25 @@ func (t Torrent) Update(tx *sqlx.Tx) error {
 	}
 	updatedTorrents[t.Tracker.Name][t.ID] = struct{}{}
 	return nil
+}
+
+func (t *Torrent) GetFiles(db *sqlx.DB) {
+	if t.Files != nil {
+		return
+	}
+	var f []whatapi.FileStruct
+	DieIfError(db.Select(&f, `
+SELECT name AS namef, size
+FROM files
+WHERE tracker=? AND torrentid=?`, t.Tracker, t.ID))
+	if int64(len(f)) == t.FileCount {
+		t.Files = f
+		return
+	}
+	tx, err := db.Beginx()
+	DieIfError(err)
+	DieIfError(t.Fill(tx))
+	DieIfError(tx.Commit())
 }
 
 var trackers = map[string]Tracker{
