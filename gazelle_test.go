@@ -21,6 +21,7 @@
 package gazelle_test
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"reflect"
@@ -34,7 +35,11 @@ import (
 var db *sqlx.DB
 
 func TestMain(m *testing.M) {
-	db, err := sqlx.Connect("sqlite3", ":memory:")
+	var err error
+	db, err = sqlx.Connect("sqlite3", ":memory:")
+	if err == nil {
+		err = LoadTestDB(db)
+	}
 	if err != nil {
 		fmt.Printf("Can't open in memory db: %s", err)
 		os.Exit(-1)
@@ -50,13 +55,25 @@ func TestArtistUpdates(t *testing.T) {
 	}
 	tx, err := db.Beginx()
 	if err != nil {
-		t.Errorf("%s", err)
+		t.Error(err)
 	}
 	defer tx.Rollback()
 	tracker := gazelle.Tracker{Name: "bar"}
+	var ta gazelle.Artist
+	err = tx.Get(&ta, `SELECT name, id FROM artists WHERE id=?`, a.ID)
+	if err == nil {
+		t.Errorf("precondition failed artist with id %d exists", a.ID)
+	}
+	if err != sql.ErrNoRows {
+		t.Error(err)
+	}
 	err = a.Update(tx, tracker)
+	err = tx.Get(&ta, `SELECT name, id FROM artists WHERE id=?`, a.ID)
 	if err != nil {
-		t.Errorf("%s", err)
+		t.Error(err)
+	}
+	if ta.ID != a.ID {
+		t.Errorf("expected artist with id %d, got %d", a.ID, ta.ID)
 	}
 }
 
@@ -84,9 +101,57 @@ func TestGetArtists(t *testing.T) {
 			ID: 2717,
 		},
 	}
-	expectedArtists := []gazelle.Artist{{Name: "foo", ID: 3414}}
-	to.GetArtists(db)
+	expectedArtists := map[string][]gazelle.Artist{
+		"Artist": {{Name: "foo", ID: 3414}},
+	}
+	err := to.GetArtists(db)
+	if err != nil {
+		t.Error(err)
+	}
 	if !reflect.DeepEqual(expectedArtists, to.Artists.Artists) {
 		t.Errorf("expected %v got %v", expectedArtists, to.Artists.Artists)
 	}
+}
+
+func LoadTestDB(db *sqlx.DB) error {
+	_, err := db.Exec(`
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE artists (
+    tracker              TEXT    NOT NULL,
+    id                   INTEGER NOT NULL,
+    name                 TEXT    NOT NULL,
+    notificationsenabled BOOL, -- not in MusicInfo
+    hasbookmarked        BOOL, -- not in MusicInfo
+    image                TEXT, -- not in MusicInfo
+    body                 TEXT, -- not in MusicInfo
+    vanityhouse          BOOL, -- not in MusicInfo
+    -- similarartists
+    numgroups            INTEGER, -- not in MusicInfo
+    numtorrents          INTEGER, -- not in MusicInfo
+    numseeders           INTEGER, -- not in MusicInfo
+    numleechers          INTEGER, -- not in MusicInfo
+    numsnatches          INTEGER, -- not in MusicInfo
+    PRIMARY KEY (tracker, id)) WITHOUT ROWID;
+CREATE INDEX artists_name ON artists(name COLLATE NOCASE);
+
+CREATE TABLE artists_groups (
+    tracker  TEXT NOT NULL,
+    artistid INTEGER NOT NULL,
+    groupid  INTEGER NOT NULL,
+    role     TEXT NOT NULL,
+    PRIMARY KEY (tracker, artistid, groupid),
+    FOREIGN KEY(tracker, groupid) REFERENCES groups(tracker, id),
+    FOREIGN KEY(tracker, artistid) REFERENCES artists(tracker, id)
+) WITHOUT ROWID;
+CREATE INDEX artists_groups_artistid ON artists_groups(tracker, artistid);
+CREATE INDEX artists_groups_groupid ON artists_groups(tracker, groupid);
+
+INSERT INTO artists (tracker,id,name) VALUES("bar",3414,"foo");
+INSERT INTO artists_groups VALUES("bar",3414,2717,"Artist");
+COMMIT;
+PRAGMA foreign_keys=ON;
+`)
+	return err
+
 }

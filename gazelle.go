@@ -24,9 +24,7 @@ import (
 	"fmt"
 	"html"
 	"net/url"
-	"os"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -86,17 +84,20 @@ func (a Artists) Names() []string {
 	return s
 }
 
-func (t *Torrent) GetArtists(db *sqlx.DB) {
+func (t *Torrent) GetArtists(db *sqlx.DB) error {
 	var artists []struct {
 		ID   int64  `db:"id"`
 		Name string `db:"name"`
 		Role string `db:"role"`
 	}
-	DieIfError(db.Select(&artists, `
+	err := db.Select(&artists, `
 SELECT ga.id, ga.name, gag.role
 FROM artists_groups AS gag
 JOIN artists AS ga ON gag.tracker=ga.tracker AND gag.artistid=ga.id
-WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID))
+WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID)
+	if err != nil {
+		return err
+	}
 	if t.Artists.Artists == nil {
 		t.Artists.Artists = map[string][]Artist{}
 	}
@@ -104,6 +105,7 @@ WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID))
 		t.Artists.Artists[a.Role] = append(
 			t.Artists.Artists[a.Role], Artist{a.ID, a.Name})
 	}
+	return nil
 }
 
 func (a Artists) DisplayName() string {
@@ -482,23 +484,30 @@ func (t Torrent) Update(tx *sqlx.Tx) error {
 	return nil
 }
 
-func (t *Torrent) GetFiles(db *sqlx.DB) {
+func (t *Torrent) GetFiles(db *sqlx.DB) error {
 	if t.Files != nil {
-		return
+		return nil
 	}
 	var f []whatapi.FileStruct
-	DieIfError(db.Select(&f, `
+	err := db.Select(&f, `
 SELECT name AS namef, size
 FROM files
-WHERE tracker=? AND torrentid=?`, t.Tracker.Name, t.ID))
+WHERE tracker=? AND torrentid=?`, t.Tracker.Name, t.ID)
+	if err != nil {
+		return err
+	}
 	if int64(len(f)) == t.FileCount {
 		t.Files = f
-		return
+		return nil
 	}
 	tx, err := db.Beginx()
-	DieIfError(err)
-	DieIfError(t.Fill(tx))
-	DieIfError(tx.Commit())
+	if err == nil {
+		err = t.Fill(tx)
+	}
+	if err == nil {
+		err = tx.Commit()
+	}
+	return nil
 }
 
 func (t *Torrent) String() string {
@@ -515,25 +524,6 @@ func (t *Torrent) String() string {
 		strings.Join(t.Names(), ","), t.Group.Name, t.Year,
 		t.Media, t.Format, t.Encoding,
 		remaster, t.ReleaseType())
-}
-
-func FatalN(err error, n int) {
-	rpc := make([]uintptr, 1)
-	runtime.Callers(n, rpc)
-	frame, _ := runtime.CallersFrames(rpc).Next()
-	fmt.Printf("FATAL %s:%d %s: %s\n",
-		frame.File, frame.Line, frame.Function, err)
-	os.Exit(-1)
-}
-
-func Fatal(err error) {
-	FatalN(err, 3)
-}
-
-func DieIfError(err error) {
-	if err != nil {
-		FatalN(err, 3)
-	}
 }
 
 func NullableString(s *string) string {
@@ -709,15 +699,14 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 	return torrents, err
 }
 
-func (src Torrent) UpdateCross(tx *sqlx.Tx, dst Torrent) {
+func (src Torrent) UpdateCross(tx *sqlx.Tx, dst Torrent) error {
 	if dst.ID == 0 {
 		_, err := tx.Exec(`
 INSERT INTO crosses
 VALUES(?,?,NULL,NULL,datetime("now"))
 ON CONFLICT (tracker, torrentid) DO NOTHING`,
 			src.Tracker.Name, src.ID)
-		DieIfError(err)
-		return
+		return err
 	}
 	_, err := tx.Exec(`
 INSERT INTO crosses
@@ -730,7 +719,7 @@ otherid = excluded.otherid,
 time=excluded.time`,
 		src.Tracker.Name, src.ID, dst.Tracker.Name, dst.ID,
 		dst.Tracker.Name, dst.ID, src.Tracker.Name, src.ID)
-	DieIfError(err)
+	return err
 }
 
 func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
