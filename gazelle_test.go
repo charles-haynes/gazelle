@@ -21,26 +21,33 @@
 package gazelle_test
 
 import (
-	"database/sql/driver"
+	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
 	"github.com/charles-haynes/gazelle"
-	"github.com/charles-haynes/gazelle/mockSQLDriver"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 )
 
+var db *sqlx.DB
+
+func TestMain(m *testing.M) {
+	db, err := sqlx.Connect("sqlite3", ":memory:")
+	if err != nil {
+		fmt.Printf("Can't open in memory db: %s", err)
+		os.Exit(-1)
+	}
+	defer db.Close()
+	os.Exit(m.Run())
+}
+
 func TestArtistUpdates(t *testing.T) {
-	mockSQLDriver.Calls.Reset()
 	a := gazelle.Artist{
 		Name: "foo",
 		ID:   2717,
 	}
-	db, err := sqlx.Connect("mock", "")
-	if err != nil {
-		t.Errorf("%s", err)
-	}
-	defer db.Close()
 	tx, err := db.Beginx()
 	if err != nil {
 		t.Errorf("%s", err)
@@ -51,14 +58,9 @@ func TestArtistUpdates(t *testing.T) {
 	if err != nil {
 		t.Errorf("%s", err)
 	}
-	if !mockSQLDriver.Calls.Contains(
-		"MockStmt.Exec", []driver.Value{"bar", int64(2717), "foo"}) {
-		t.Errorf(`expected to exec with "bar", 2717, "foo"`)
-	}
 }
 
 func TestArtistsNames(t *testing.T) {
-	mockSQLDriver.Calls.Reset()
 	a := gazelle.Artists{
 		Artists: map[string][]gazelle.Artist{
 			"Artist": {
@@ -74,12 +76,6 @@ func TestArtistsNames(t *testing.T) {
 }
 
 func TestGetArtists(t *testing.T) {
-	mockSQLDriver.Calls.Reset()
-	db, err := sqlx.Connect("mock", "")
-	if err != nil {
-		t.Errorf("%s", err)
-	}
-	defer db.Close()
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
@@ -88,10 +84,9 @@ func TestGetArtists(t *testing.T) {
 			ID: 2717,
 		},
 	}
-	// mock return value from query
+	expectedArtists := []gazelle.Artist{{Name: "foo", ID: 3414}}
 	to.GetArtists(db)
-	if !mockSQLDriver.Calls.Contains(
-		"MockStmt.Query", []driver.Value{"bar", int64(2717)}) {
-		t.Errorf(`expected to query with "bar", 2717`)
+	if !reflect.DeepEqual(expectedArtists, to.Artists.Artists) {
+		t.Errorf("expected %v got %v", expectedArtists, to.Artists.Artists)
 	}
 }
