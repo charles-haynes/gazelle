@@ -209,13 +209,8 @@ func TestNewExtendedArtistMap(t *testing.T) {
 	expected := gazelle.Artists{
 		Tracker: tracker,
 		Artists: map[string][]gazelle.Artist{
-			"Composer":  {},
-			"DJ":        {},
-			"Artist":    {{1, "bar"}, {2, "baz"}},
-			"With":      {{3, "bletch"}},
-			"Conductor": {},
-			"RemixedBy": {},
-			"Producer":  {},
+			"Artist": {{1, "bar"}, {2, "baz"}},
+			"With":   {{3, "bletch"}},
 		},
 	}
 	a := gazelle.NewExtendedArtistMap(tracker, am)
