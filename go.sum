@@ -1,5 +1,9 @@
 github.com/charles-haynes/whatapi v0.0.0-20191025000249-c0bee62a7240 h1:wat2XqW9eckHSSQM3M7QNTj/OrrLNUKA88A323XCTms=
 github.com/charles-haynes/whatapi v0.0.0-20191025000249-c0bee62a7240/go.mod h1:mdY7ozoeaV7lFyeLDsPSx2HFmJzSosV4uk30p6vHdbU=
+github.com/charles-haynes/whatapi v0.0.1 h1:YJORu3eowiIC2ZfsvZevuh32DoS6nvEBDyBk5XzOBsc=
+github.com/charles-haynes/whatapi v0.0.1/go.mod h1:mdY7ozoeaV7lFyeLDsPSx2HFmJzSosV4uk30p6vHdbU=
+github.com/charles-haynes/whatapi v0.0.3 h1:Qw3UNE8RNWbW2pp4NQrb8ju+HPR5uxZMpqHYWynpQLQ=
+github.com/charles-haynes/whatapi v0.0.3/go.mod h1:mdY7ozoeaV7lFyeLDsPSx2HFmJzSosV4uk30p6vHdbU=
 github.com/go-sql-driver/mysql v1.4.0 h1:7LxgVwFb2hIQtMm87NdgAVfXjnt4OePseqT1tKx+opk=
 github.com/go-sql-driver/mysql v1.4.0/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
 github.com/jmoiron/sqlx v1.2.0 h1:41Ip0zITnmWNR/vHV+S4m+VoUivnWY5E4OJfLZjCJMA=

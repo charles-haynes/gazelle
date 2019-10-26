@@ -52,7 +52,7 @@ func TestArtistUpdates(t *testing.T) {
 		t.Errorf("%s", err)
 	}
 	if !mockSQLDriver.Calls.Contains(
-		"stmt.Exec", []driver.Value{"bar", int64(2717), "foo"}) {
+		"MockStmt.Exec", []driver.Value{"bar", int64(2717), "foo"}) {
 		t.Errorf(`expected to exec with "bar", 2717, "foo"`)
 	}
 }
@@ -91,7 +91,7 @@ func TestGetArtists(t *testing.T) {
 	// mock return value from query
 	to.GetArtists(db)
 	if !mockSQLDriver.Calls.Contains(
-		"stmt.Query", []driver.Value{"bar", int64(2717)}) {
+		"MockStmt.Query", []driver.Value{"bar", int64(2717)}) {
 		t.Errorf(`expected to query with "bar", 2717`)
 	}
 }

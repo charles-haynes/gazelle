@@ -7,6 +7,7 @@ import (
 	"io"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 type Call struct {
@@ -22,7 +23,10 @@ func (c CallLog) Append(args interface{}) {
 	rpc := make([]uintptr, 1)
 	runtime.Callers(2, rpc)
 	frame, _ := runtime.CallersFrames(rpc).Next()
-	Calls = append(Calls, Call{frame.Function, args})
+	n := strings.TrimPrefix(
+		frame.Function,
+		"github.com/charles-haynes/gazelle/mockSQLDriver.")
+	Calls = append(Calls, Call{n, args})
 }
 
 func (c CallLog) Contains(name string, args interface{}) bool {
