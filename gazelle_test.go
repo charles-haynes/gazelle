@@ -200,6 +200,30 @@ func TestNewMusicInfo(t *testing.T) {
 	}
 }
 
+func TestNewExtendedArtistMap(t *testing.T) {
+	tracker := gazelle.Tracker{Name: "foo"}
+	am := whatapi.ExtendedArtistMap{
+		"1": []whatapi.ArtistGroupArtist{{1, "bar", 4}, {2, "baz", 5}},
+		"2": []whatapi.ArtistGroupArtist{{3, "bletch", 6}},
+	}
+	expected := gazelle.Artists{
+		Tracker: tracker,
+		Artists: map[string][]gazelle.Artist{
+			"Composer":  {},
+			"DJ":        {},
+			"Artist":    {{1, "bar"}, {2, "baz"}},
+			"With":      {{3, "bletch"}},
+			"Conductor": {},
+			"RemixedBy": {},
+			"Producer":  {},
+		},
+	}
+	a := gazelle.NewExtendedArtistMap(tracker, am)
+	if !reflect.DeepEqual(expected, a) {
+		t.Errorf("expected %v got %v", expected, a)
+	}
+}
+
 func LoadTestDB(db *sqlx.DB) error {
 	_, err := db.Exec(`
 PRAGMA foreign_keys=OFF;
