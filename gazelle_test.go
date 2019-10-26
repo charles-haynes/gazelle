@@ -219,6 +219,15 @@ func TestNewExtendedArtistMap(t *testing.T) {
 	}
 }
 
+func TestGroupReleaseType(t *testing.T) {
+	g := gazelle.Group{}
+	expected := "foo"
+	r := g.ReleaseType()
+	if expected != r {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+}
+
 func LoadTestDB(db *sqlx.DB) error {
 	_, err := db.Exec(`
 PRAGMA foreign_keys=OFF;
