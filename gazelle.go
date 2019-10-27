@@ -281,7 +281,7 @@ func (g Group) UpdateArtistsGroups(tx *sqlx.Tx) error {
 	for r, as := range g.Artists.Artists {
 		for _, a := range as {
 			_, err := tx.Exec(`INSERT OR REPLACE INTO artists_groups VALUES (?,?,?,?)`,
-				g.Tracker, a.ID, g.ID, r)
+				g.Tracker.Name, a.ID, g.ID, r)
 			if err != nil {
 				return err
 			}

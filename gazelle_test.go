@@ -55,13 +55,13 @@ func TestMain(m *testing.M) {
 }
 
 func TestArtistUpdate(t *testing.T) {
-	a := gazelle.Artist{2717, "foo"}
+	a := gazelle.Artist{2717, "artist"}
 	tx, err := db.Beginx()
 	if err != nil {
 		t.Error(err)
 	}
 	defer tx.Rollback()
-	tracker := gazelle.Tracker{Name: "bar"}
+	tracker := gazelle.Tracker{Name: "tracker"}
 	var ta gazelle.Artist
 	err = tx.Get(&ta, `SELECT name, id FROM artists WHERE id=?`, a.ID)
 	if err == nil {
@@ -83,12 +83,13 @@ func TestArtistUpdate(t *testing.T) {
 func TestArtistsNames(t *testing.T) {
 	a := gazelle.Artists{
 		Artists: map[string][]gazelle.Artist{
-			"Artist": {{2717, "foo"}, {3414, "bar"}},
+			"Artist": {{1, "artist1"}, {2, "artist2"}},
 		},
 	}
 	res := a.Names()
-	if !reflect.DeepEqual(res, []string{"foo", "bar"}) {
-		t.Errorf(`expected {"foo", "bar"} got %#v`, res)
+	expected := []string{"artist1", "artist2"}
+	if !reflect.DeepEqual(res, expected) {
+		t.Errorf(`expected %v got %#v`, expected, res)
 	}
 }
 
@@ -96,21 +97,21 @@ func TestArtistsGetArtists(t *testing.T) {
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "bar"},
+				Tracker: gazelle.Tracker{Name: "tracker"},
 			},
-			ID: 2717,
+			ID: 2,
 		},
 	}
 	expectedArtists := map[string][]gazelle.Artist{
-		"Artist": {{3414, "foo"}},
+		"Role": {{1, "artist"}},
 	}
 	_, err := db.Exec(`
 DELETE FROM artists_groups;
 DELETE FROM groups;
 DELETE FROM artists;
-INSERT INTO artists (tracker,id,name) VALUES("bar",3414,"foo");
-INSERT INTO groups VALUES("bar",NULL,NULL,2717,"baz",0,"","","",NULL,NULL,NULL,false,NULL,"");
-INSERT INTO artists_groups VALUES("bar",3414,2717,"Artist");
+INSERT INTO artists (tracker,id,name) VALUES("tracker",1,"artist");
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
+INSERT INTO artists_groups VALUES("tracker",1,2,"Role");
 `)
 	if err != nil {
 		t.Error(err)
@@ -130,17 +131,17 @@ func TestArtistsDisplayName(t *testing.T) {
 		t.Errorf("expected display name \"\", got \"%s\"", r)
 	}
 	a.Artists["Artist"] = append(
-		a.Artists["Artist"], gazelle.Artist{2717, "foo"})
-	if r := a.DisplayName(); r != "foo" {
+		a.Artists["Artist"], gazelle.Artist{1, "Artist1"})
+	if r := a.DisplayName(); r != "Artist1" {
 		t.Errorf("expected display name foo, got %s", r)
 	}
 	a.Artists["Artist"] = append(
-		a.Artists["Artist"], gazelle.Artist{3414, "bar"})
-	if r := a.DisplayName(); r != "foo & bar" {
+		a.Artists["Artist"], gazelle.Artist{2, "Artist2"})
+	if r := a.DisplayName(); r != "Artist1 & Artist2" {
 		t.Errorf("expected display name foo & bar, got %s", r)
 	}
 	a.Artists["Artist"] = append(
-		a.Artists["Artist"], gazelle.Artist{5772, "baz"})
+		a.Artists["Artist"], gazelle.Artist{3, "Artist3"})
 	if r := a.DisplayName(); r != "Various Artists" {
 		t.Errorf("expected display Various Artists, got %s", r)
 	}
@@ -161,9 +162,9 @@ DELETE FROM artists;
 		t.Error(err)
 	}
 	a := gazelle.Artists{
-		Tracker: gazelle.Tracker{Name: "bar"},
+		Tracker: gazelle.Tracker{Name: "tracker"},
 		Artists: map[string][]gazelle.Artist{
-			"Artist": {{2717, "foo"}, {3414, "bar"}},
+			"Artist": {{1, "artist1"}, {2, "artist2"}},
 		},
 	}
 	err = a.Update(tx)
@@ -175,25 +176,25 @@ DELETE FROM artists;
 	if err != nil {
 		t.Error(err)
 	}
-	expected := []gazelle.Artist{{2717, "foo"}, {3414, "bar"}}
+	expected := []gazelle.Artist{{1, "artist1"}, {2, "artist2"}}
 	if !reflect.DeepEqual(expected, a.Artists["Artist"]) {
 		t.Errorf("expected %v got %v", expected, a.Artists["Artist"])
 	}
 }
 
 func TestNewMusicInfo(t *testing.T) {
-	tracker := gazelle.Tracker{Name: "foo"}
+	tracker := gazelle.Tracker{Name: "tracker"}
 	mi := whatapi.MusicInfo{
-		Artists: []whatapi.MusicInfoStruct{{1, "bar"}, {2, "baz"}},
-		With:    []whatapi.MusicInfoStruct{{3, "bletch"}},
+		Artists: []whatapi.MusicInfoStruct{{1, "artist1"}, {2, "artist2"}},
+		With:    []whatapi.MusicInfoStruct{{3, "artist3"}},
 	}
 	expected := gazelle.Artists{
 		Tracker: tracker,
 		Artists: map[string][]gazelle.Artist{
 			"Composer":  {},
 			"DJ":        {},
-			"Artist":    {{1, "bar"}, {2, "baz"}},
-			"With":      {{3, "bletch"}},
+			"Artist":    {{1, "artist1"}, {2, "artist2"}},
+			"With":      {{3, "artist3"}},
 			"Conductor": {},
 			"RemixedBy": {},
 			"Producer":  {},
@@ -206,16 +207,19 @@ func TestNewMusicInfo(t *testing.T) {
 }
 
 func TestNewExtendedArtistMap(t *testing.T) {
-	tracker := gazelle.Tracker{Name: "foo"}
+	tracker := gazelle.Tracker{Name: "tracker"}
 	am := whatapi.ExtendedArtistMap{
-		"1": []whatapi.ArtistGroupArtist{{1, "bar", 4}, {2, "baz", 5}},
-		"2": []whatapi.ArtistGroupArtist{{3, "bletch", 6}},
+		"1": []whatapi.ArtistGroupArtist{
+			{1, "artist1", 4},
+			{2, "artist2", 5},
+		},
+		"2": []whatapi.ArtistGroupArtist{{3, "artist3", 6}},
 	}
 	expected := gazelle.Artists{
 		Tracker: tracker,
 		Artists: map[string][]gazelle.Artist{
-			"Artist": {{1, "bar"}, {2, "baz"}},
-			"With":   {{3, "bletch"}},
+			"Artist": {{1, "artist1"}, {2, "artist2"}},
+			"With":   {{3, "artist3"}},
 		},
 	}
 	a := gazelle.NewExtendedArtistMap(tracker, am)
@@ -228,12 +232,12 @@ func TestGroupReleaseType(t *testing.T) {
 	g := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: gazelle.Tracker{
-				ReleaseTypes: map[int64]string{2717: "foo"},
+				ReleaseTypes: map[int64]string{1: "release"},
 			},
 		},
-		ReleaseTypeF: 2717,
+		ReleaseTypeF: 1,
 	}
-	expected := "foo"
+	expected := "release"
 	r := g.ReleaseType()
 	if expected != r {
 		t.Errorf("expected %v got %v", expected, r)
@@ -244,34 +248,24 @@ func TestTorrentShortName(t *testing.T) {
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "foo"},
+				Tracker: gazelle.Tracker{Name: "tracker"},
 			},
 		},
-		ID: 2717,
+		ID: 1,
 	}
-	expected := "foo-2717"
+	expected := "tracker-1"
 	r := to.ShortName()
 	if expected != r {
 		t.Errorf("expected %v got %v", expected, r)
 	}
 }
 
-func TestTorrentFill(t *testing.T) {
+func TestTorrentFill_BadTorrentID(t *testing.T) {
 	tx, err := db.Beginx()
 	if err != nil {
 		t.Error(err)
 	}
 	defer tx.Rollback()
-	// three cases
-	// 1 bad torrent id
-	// 2 already filled
-	// 3 needs filling
-	// need to inject JSON getter and test that we fill from json
-	// (though that's duplicating GetTorrent)
-	// then check that the DB gets upated
-	// (though that duplicates Update)
-
-	// case 1 bad torrent id
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
@@ -281,11 +275,11 @@ func TestTorrentFill(t *testing.T) {
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
 					WhatAPI: m,
-					Name:    "foo",
+					Name:    "tracker",
 				},
 			},
 		},
-		ID: 3414,
+		ID: 1,
 	}
 	err = to.Fill(tx)
 	if err == nil {
@@ -297,23 +291,29 @@ func TestTorrentFill(t *testing.T) {
 	if !m.Contains("GetJSON") {
 		t.Errorf("expected to fetch JSON")
 	}
+}
 
-	// 2 already filled
-	m = MockWhatAPI{
+func TestTorrentFill_AlreadyFilled(t *testing.T) {
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	defer tx.Rollback()
+	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
-	s := "bar"
-	to = gazelle.Torrent{
+	s := "file/path"
+	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
 					WhatAPI: m,
-					Name:    "foo",
+					Name:    "tracker",
 				},
 			},
 		},
-		ID:       3414,
+		ID:       1,
 		Files:    []whatapi.FileStruct{},
 		FilePath: &s,
 	}
@@ -328,18 +328,24 @@ func TestTorrentFill(t *testing.T) {
 	if m.Contains("GetJSON") {
 		t.Errorf("expected not to call GetJSON")
 	}
+}
 
-	// 3 needs filling
-	m = MockWhatAPI{
+func TestTorrentFill_NeedsFilling(t *testing.T) {
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	defer tx.Rollback()
+	m := MockWhatAPI{
 		JSON:  torrent1JSON,
 		Calls: &[]string{},
 	}
-	to = gazelle.Torrent{
+	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
 					WhatAPI: m,
-					Name:    "foo",
+					Name:    "tracker",
 				},
 			},
 		},
@@ -361,6 +367,88 @@ func TestTorrentFill(t *testing.T) {
 	}
 	if to.FilePath == nil {
 		t.Errorf("expected to fill FilePath")
+	}
+}
+
+func TestGroupUpdateArtistsGroups_NoArtists(t *testing.T) {
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec(`
+DELETE FROM artists_groups;
+DELETE FROM groups;
+DELETE FROM artists;
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	g := gazelle.Group{
+		Artists: gazelle.Artists{
+			Artists: map[string][]gazelle.Artist{},
+		},
+	}
+	err = g.UpdateArtistsGroups(tx)
+	if err != nil {
+		t.Error(err)
+	}
+	var count int
+	err = tx.Get(&count, `SELECT count(*) FROM artists_groups`)
+	if count != 0 {
+		t.Errorf("expected artists_groups to have 0 rows, got %d", count)
+	}
+}
+
+func TestGroupUpdateArtistsGroups(t *testing.T) {
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec(`
+DELETE FROM artists_groups;
+DELETE FROM groups;
+DELETE FROM artists;
+INSERT INTO artists (tracker,id,name) VALUES("tracker",1,"artist1");
+INSERT INTO artists (tracker,id,name) VALUES("tracker",2,"artist2");
+INSERT INTO groups VALUES("tracker",NULL,NULL,3,"baz",0,"","","",NULL,NULL,NULL,false,NULL,"");
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	g := gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: gazelle.Tracker{
+				Name: "tracker",
+			},
+			Artists: map[string][]gazelle.Artist{
+				"role": {{1, "artist1"}, {2, "artist2"}},
+			},
+		},
+		ID: 3,
+	}
+	err = g.UpdateArtistsGroups(tx)
+	if err != nil {
+		t.Error(err)
+	}
+	type ag struct {
+		Tracker  string
+		ArtistID int64
+		GroupID  int64
+		Role     string
+	}
+	var r []ag
+	err = tx.Select(&r, `SELECT * from artists_groups`)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []ag{
+		{"tracker", 1, 3, "role"},
+		{"tracker", 2, 3, "role"},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
 	}
 }
 
