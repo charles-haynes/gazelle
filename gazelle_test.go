@@ -31,6 +31,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/charles-haynes/gazelle"
 	"github.com/charles-haynes/whatapi"
@@ -786,5 +787,131 @@ DELETE FROM artists;
 	}
 	if !reflect.DeepEqual(expected, r) {
 		t.Errorf("expected %v but got %v", expected, r)
+	}
+}
+
+func GroupsEqual(g1, g2 gazelle.Group) error {
+	if reflect.DeepEqual(g1, g2) {
+		return nil
+	}
+	if !reflect.DeepEqual(g1.Artists, g2.Artists) {
+		return fmt.Errorf("Artists")
+	}
+	if !reflect.DeepEqual(g1.ID, g2.ID) {
+		return fmt.Errorf("ID")
+	}
+	if !reflect.DeepEqual(g1.Name, g2.Name) {
+		return fmt.Errorf("Name")
+	}
+	if !reflect.DeepEqual(g1.Year, g2.Year) {
+		return fmt.Errorf("Year")
+	}
+	if !reflect.DeepEqual(g1.RecordLabel, g2.RecordLabel) {
+		return fmt.Errorf("RecordLabel")
+	}
+	if !reflect.DeepEqual(g1.CatalogueNumber, g2.CatalogueNumber) {
+		return fmt.Errorf("CatalogueNumber")
+	}
+	if !reflect.DeepEqual(g1.ReleaseTypeF, g2.ReleaseTypeF) {
+		return fmt.Errorf("ReleaseTypeF")
+	}
+	if !reflect.DeepEqual(g1.CategoryID, g2.CategoryID) {
+		return fmt.Errorf("CategoryID")
+	}
+	if !reflect.DeepEqual(g1.CategoryName, g2.CategoryName) {
+		return fmt.Errorf("CategoryName")
+	}
+	if !reflect.DeepEqual(g1.Time, g2.Time) {
+		return fmt.Errorf("Time")
+	}
+	if !reflect.DeepEqual(g1.VanityHouse, g2.VanityHouse) {
+		return fmt.Errorf("VanityHouse")
+	}
+	if !reflect.DeepEqual(g1.WikiImage, g2.WikiImage) {
+		return fmt.Errorf("WikiImage")
+	}
+	if !reflect.DeepEqual(g1.WikiBody, g2.WikiBody) {
+		return fmt.Errorf("WikiBody")
+	}
+	if !reflect.DeepEqual(g1.IsBookmarked, g2.IsBookmarked) {
+		return fmt.Errorf("IsBookmarked")
+	}
+	if !reflect.DeepEqual(g1.Tags, g2.Tags) {
+		return fmt.Errorf("Tags")
+	}
+	return fmt.Errorf("unknown, did you leave out a field in GroupEqual?")
+}
+
+func TestNewGroupStruct(t *testing.T) {
+	tracker := gazelle.Tracker{Name: "tracker"}
+	gs := whatapi.GroupStruct{
+		WikiImageF:       "wikiimage",
+		WikiBodyF:        "wikibody",
+		IDF:              1,
+		NameF:            "name",
+		YearF:            2,
+		RecordLabelF:     "recordlabel",
+		CatalogueNumberF: "cataloguenumber",
+		ReleaseTypeF:     7,
+		CategoryID:       3,
+		CategoryName:     "categoryname",
+		Time:             "1234-05-06 07:08:09",
+		VanityHouse:      true,
+		MusicInfo: whatapi.MusicInfo{
+			Artists: []whatapi.MusicInfoStruct{
+				{4, "artist4"},
+				{5, "artist5"},
+			},
+			With: []whatapi.MusicInfoStruct{
+				{6, "artist6"},
+			},
+		},
+		IsBookmarked: true,
+		TagsF:        []string{"tag1", "tag2"},
+	}
+	r, err := gazelle.NewGroupStruct(tracker, gs)
+	if err != nil {
+		t.Error(err)
+	}
+	recordLabel := "recordlabel"
+	catalogNumber := "cataloguenumber"
+	categoryID := int64(3)
+	categoryName := "categoryname"
+	wikiImage := "wikiimage"
+	time := time.Date(1234, time.May, 6, 7, 8, 9, 0, time.UTC)
+	wikiBody := "wikibody"
+	isBookmarked := true
+	expected := gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: gazelle.Tracker{
+				Name: "tracker",
+			},
+			Artists: map[string][]gazelle.Artist{
+				"Artist":    {{4, "artist4"}, {5, "artist5"}},
+				"Composer":  {},
+				"Conductor": {},
+				"DJ":        {},
+				"Producer":  {},
+				"RemixedBy": {},
+				"With":      {{6, "artist6"}},
+			},
+		},
+		ID:              1,
+		Name:            "name",
+		Year:            2,
+		RecordLabel:     &recordLabel,
+		CatalogueNumber: &catalogNumber,
+		ReleaseTypeF:    int64(7),
+		CategoryID:      &categoryID,
+		CategoryName:    &categoryName,
+		Time:            &time,
+		VanityHouse:     true,
+		WikiImage:       &wikiImage,
+		WikiBody:        &wikiBody,
+		IsBookmarked:    &isBookmarked,
+		Tags:            "tag1,tag2",
+	}
+	if err := GroupsEqual(expected, r); err != nil {
+		t.Errorf("expected %v got %v, differs in %s", expected, r, err)
 	}
 }

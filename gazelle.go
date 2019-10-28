@@ -298,10 +298,6 @@ func Bint(b bool) int {
 	return 0
 }
 
-/*
-var updatedGroups = map[grp]struct{}{}
-*/
-
 func (g Group) Update(tx *sqlx.Tx) error {
 	if g.updatedGroups == nil {
 		g.updatedGroups = map[int64]struct{}{}
@@ -386,6 +382,7 @@ func NewGroupStruct(tracker Tracker, gs whatapi.GroupStruct) (g Group, err error
 		CategoryName:    &gs.CategoryName,
 		Time:            &gtime,
 		VanityHouse:     gs.VanityHouse,
+		IsBookmarked:    &gs.IsBookmarked,
 		Tags:            strings.Join(gs.Tags(), ","),
 	}
 	return g, nil
@@ -405,10 +402,6 @@ func (t Torrent) UpdateFiles(tx *sqlx.Tx) error {
 	}
 	return nil
 }
-
-/*
-var updatedTorrents = map[string]map[int]struct{}{}
-*/
 
 func (t Torrent) Update(tx *sqlx.Tx) error {
 	if t.updatedTorrents == nil {
