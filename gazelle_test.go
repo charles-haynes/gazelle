@@ -54,6 +54,250 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+const (
+	createArtists = `
+CREATE TABLE artists (
+    tracker              TEXT    NOT NULL,
+    id                   INTEGER NOT NULL,
+    name                 TEXT    NOT NULL,
+    notificationsenabled BOOL, -- not in MusicInfo
+    hasbookmarked        BOOL, -- not in MusicInfo
+    image                TEXT, -- not in MusicInfo
+    body                 TEXT, -- not in MusicInfo
+    vanityhouse          BOOL, -- not in MusicInfo
+    -- similarartists
+    numgroups            INTEGER, -- not in MusicInfo
+    numtorrents          INTEGER, -- not in MusicInfo
+    numseeders           INTEGER, -- not in MusicInfo
+    numleechers          INTEGER, -- not in MusicInfo
+    numsnatches          INTEGER, -- not in MusicInfo
+    PRIMARY KEY (tracker, id)) WITHOUT ROWID;
+CREATE INDEX artists_name ON artists(name COLLATE NOCASE);
+`
+	createGroups = `
+CREATE TABLE groups (
+    tracker         TEXT     NOT NULL,
+    wikibody        TEXT, --          not in artist, search, top10
+    wikiimage       TEXT, --          not in search
+    id              INTEGER  NOT NULL,
+    name            TEXT     NOT NULL,
+    year            INTEGER  NOT NULL,
+    recordlabel     TEXT, --          not in search or top10
+    cataloguenumber TEXT, --          not in search or top10
+    releasetype     INTEGER  NOT NULL,
+    categoryid      INTEGER, --       not search
+    categoryname    TEXT, --          not in artist
+    time            DATETIME, --      not in artist
+    vanityhouse     BOOL     NOT NULL,
+    isbookmarked    BOOL, --          not in torrent
+    -- map artists to group
+    tags            STRING   NOT NULL, -- concatenated with ,
+    PRIMARY KEY(tracker, id)) WITHOUT ROWID;
+CREATE INDEX groups_name ON groups(name COLLATE NOCASE);
+`
+	createArtistsGroups = `
+CREATE TABLE artists_groups (
+    tracker  TEXT NOT NULL,
+    artistid INTEGER NOT NULL,
+    groupid  INTEGER NOT NULL,
+    role     TEXT NOT NULL,
+    PRIMARY KEY (tracker, artistid, groupid),
+    FOREIGN KEY(tracker, groupid) REFERENCES groups(tracker, id),
+    FOREIGN KEY(tracker, artistid) REFERENCES artists(tracker, id)
+) WITHOUT ROWID;
+CREATE INDEX artists_groups_artistid ON artists_groups(tracker, artistid);
+CREATE INDEX artists_groups_groupid ON artists_groups(tracker, groupid);
+`
+)
+
+func LoadTestDB(db *sqlx.DB) error {
+	_, err := db.Exec(`
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+` +
+		createArtists +
+		createGroups +
+		createArtistsGroups +
+		`
+COMMIT;
+PRAGMA foreign_keys=ON;
+`)
+	return err
+
+}
+
+type MockWhatAPI struct {
+	JSON  string
+	Calls *[]string
+}
+
+func (m *MockWhatAPI) Called() {
+	rpc := make([]uintptr, 1)
+	runtime.Callers(2, rpc)
+	frame, _ := runtime.CallersFrames(rpc).Next()
+	n := strings.TrimPrefix(
+		frame.Function,
+		"github.com/charles-haynes/gazelle_test.MockWhatAPI.")
+	*m.Calls = append(*m.Calls, n)
+}
+
+func (m MockWhatAPI) Contains(name string) bool {
+	for _, v := range *m.Calls {
+		if v == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (m MockWhatAPI) Print() {
+	for _, v := range *m.Calls {
+		fmt.Printf("%s\n", v)
+	}
+}
+
+func (m *MockWhatAPI) Reset() {
+	*m.Calls = (*m.Calls)[:0]
+}
+
+var (
+	errRequestFailed       = errors.New("Request failed")
+	errRequestFailedReason = func(err string) error {
+		return fmt.Errorf("Request failed: %s", err)
+	}
+)
+
+func checkResponseStatus(status, errorStr string) error {
+	if status != "success" {
+		if errorStr != "" {
+			return errRequestFailedReason(errorStr)
+		}
+		return errRequestFailed
+	}
+	return nil
+}
+
+func (m MockWhatAPI) GetJSON(requestURL string, responseObj interface{}) error {
+	m.Called()
+	return json.Unmarshal([]byte(m.JSON), responseObj)
+}
+func (m MockWhatAPI) Do(action string, params url.Values, result interface{}) error {
+	m.Called()
+	return nil
+}
+func (m MockWhatAPI) CreateDownloadURL(id int) (s string, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) Login(username, password string) error {
+	m.Called()
+	return nil
+}
+func (m MockWhatAPI) Logout() error {
+	m.Called()
+	return nil
+}
+func (m MockWhatAPI) GetAccount() (a whatapi.Account, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetMailbox(params url.Values) (M whatapi.Mailbox, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetConversation(id int) (C whatapi.Conversation, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetNotifications(params url.Values) (N whatapi.Notifications, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetAnnouncements() (A whatapi.Announcements, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetSubscriptions(params url.Values) (S whatapi.Subscriptions, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetCategories() (C whatapi.Categories, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetForum(id int, params url.Values) (F whatapi.Forum, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetThread(id int, params url.Values) (T whatapi.Thread, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetArtistBookmarks() (A whatapi.ArtistBookmarks, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetTorrentBookmarks() (T whatapi.TorrentBookmarks, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetArtist(id int, params url.Values) (A whatapi.Artist, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetRequest(id int, params url.Values) (R whatapi.Request, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetTorrent(id int, params url.Values) (G whatapi.GetTorrentStruct, e error) {
+	m.Called()
+	torrent := whatapi.TorrentResponse{}
+	e = m.GetJSON(m.JSON, &torrent)
+	if e != nil {
+		return torrent.Response, e
+	}
+	return torrent.Response, checkResponseStatus(torrent.Status, torrent.Error)
+	return
+}
+func (m MockWhatAPI) GetTorrentGroup(id int, params url.Values) (T whatapi.TorrentGroup, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) SearchTorrents(searchStr string, params url.Values) (T whatapi.TorrentSearch, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) SearchRequests(searchStr string, params url.Values) (R whatapi.RequestsSearch, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) SearchUsers(searchStr string, params url.Values) (U whatapi.UserSearch, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetTopTenTorrents(params url.Values) (T whatapi.TopTenTorrents, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetTopTenTags(params url.Values) (T whatapi.TopTenTags, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetTopTenUsers(params url.Values) (T whatapi.TopTenUsers, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) GetSimilarArtists(id, limit int) (S whatapi.SimilarArtists, e error) {
+	m.Called()
+	return
+}
+func (m MockWhatAPI) ParseHTML(s string) (st string, e error) {
+	m.Called()
+	return
+}
+
+const torrent1JSON = `{"status":"success","response":{"group":{"wikiBody":"blah blah","wikiImage":"https:\/\/ptpimg.me\/yh5fqd.jpg","id":1,"name":"The Dark Side of the Moon","year":1973,"recordLabel":"","catalogueNumber":"","releaseType":1,"categoryId":1,"categoryName":"Music","time":"2019-08-28 17:46:53","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"Pink Floyd"}],"with":[],"conductor":[],"remixedBy":[],"producer":[]},"tags":["rock","experimental","progressive.rock","psychedelic","psychedelic.rock","space.rock","classic.rock","hard.rock","1970s","art.rock","british","staff.recs"]},"torrent":{"id":1,"infoHash":"C380B62A3EC6658597C56F45D596E8081B3F7A5C","media":"CD","format":"FLAC","encoding":"Lossless","remastered":true,"remasterYear":1988,"remasterTitle":"Japan MFSL UltraDisc #1, 24 Karat Gold","remasterRecordLabel":"Mobile Fidelity Sound Lab","remasterCatalogueNumber":"UDCD 517","scene":false,"hasLog":true,"hasCue":true,"logScore":70,"fileCount":12,"size":219114079,"seeders":100,"leechers":0,"snatched":414,"freeTorrent":false,"reported":false,"time":"2016-11-24 01:34:03","description":"[important]Staff: Technically trumped because EAC 0.95 logs are terrible. There is historic and sentimental value in keeping the first torrent ever uploaded to the site as well as a perfect modern rip. Take no action.[\/important]","fileList":"01 - Speak to Me.flac{{{3732587}}}|||02 -  Breathe.flac{{{14244409}}}|||03 - On the Run.flac{{{16541873}}}|||04 - Time.flac{{{35907465}}}|||05 -  The Great Gig in the Sky.flac{{{20671913}}}|||06 - Money.flac{{{37956922}}}|||07 -Us and Them.flac{{{39706774}}}|||08 - Any Colour You Like.flac{{{18736396}}}|||09 - Brain Damage.flac{{{20457034}}}|||10 - Eclipse.flac{{{11153655}}}|||Pink Floyd - Dark Side of the Moon.CUE{{{1435}}}|||Pink Floyd - Dark Side of the Moon.log{{{3616}}}","filePath":"Pink Floyd - Dark Side of the Moon (OMR MFSL 24k Gold Ultradisc II) fixed tags","userId":9,"username":"danger"}}}`
+
 func TestArtistUpdate(t *testing.T) {
 	a := gazelle.Artist{2717, "artist"}
 	tx, err := db.Beginx()
@@ -544,234 +788,3 @@ DELETE FROM artists;
 		t.Errorf("expected %v but got %v", expected, r)
 	}
 }
-
-func LoadTestDB(db *sqlx.DB) error {
-	_, err := db.Exec(`
-PRAGMA foreign_keys=OFF;
-BEGIN TRANSACTION;
-CREATE TABLE artists (
-    tracker              TEXT    NOT NULL,
-    id                   INTEGER NOT NULL,
-    name                 TEXT    NOT NULL,
-    notificationsenabled BOOL, -- not in MusicInfo
-    hasbookmarked        BOOL, -- not in MusicInfo
-    image                TEXT, -- not in MusicInfo
-    body                 TEXT, -- not in MusicInfo
-    vanityhouse          BOOL, -- not in MusicInfo
-    -- similarartists
-    numgroups            INTEGER, -- not in MusicInfo
-    numtorrents          INTEGER, -- not in MusicInfo
-    numseeders           INTEGER, -- not in MusicInfo
-    numleechers          INTEGER, -- not in MusicInfo
-    numsnatches          INTEGER, -- not in MusicInfo
-    PRIMARY KEY (tracker, id)) WITHOUT ROWID;
-CREATE INDEX artists_name ON artists(name COLLATE NOCASE);
-
-CREATE TABLE groups (
-    tracker         TEXT     NOT NULL,
-    wikibody        TEXT, --          not in artist, search, top10
-    wikiimage       TEXT, --          not in search
-    id              INTEGER  NOT NULL,
-    name            TEXT     NOT NULL,
-    year            INTEGER  NOT NULL,
-    recordlabel     TEXT, --          not in search or top10
-    cataloguenumber TEXT, --          not in search or top10
-    releasetype     INTEGER  NOT NULL,
-    categoryid      INTEGER, --       not search
-    categoryname    TEXT, --          not in artist
-    time            DATETIME, --      not in artist
-    vanityhouse     BOOL     NOT NULL,
-    isbookmarked    BOOL, --          not in torrent
-    -- map artists to group
-    tags            STRING   NOT NULL, -- concatenated with ,
-    PRIMARY KEY(tracker, id)) WITHOUT ROWID;
-CREATE INDEX groups_name ON groups(name COLLATE NOCASE);
-
-CREATE TABLE artists_groups (
-    tracker  TEXT NOT NULL,
-    artistid INTEGER NOT NULL,
-    groupid  INTEGER NOT NULL,
-    role     TEXT NOT NULL,
-    PRIMARY KEY (tracker, artistid, groupid),
-    FOREIGN KEY(tracker, groupid) REFERENCES groups(tracker, id),
-    FOREIGN KEY(tracker, artistid) REFERENCES artists(tracker, id)
-) WITHOUT ROWID;
-CREATE INDEX artists_groups_artistid ON artists_groups(tracker, artistid);
-CREATE INDEX artists_groups_groupid ON artists_groups(tracker, groupid);
-
-COMMIT;
-PRAGMA foreign_keys=ON;
-`)
-	return err
-
-}
-
-type MockWhatAPI struct {
-	JSON  string
-	Calls *[]string
-}
-
-func (m *MockWhatAPI) Called() {
-	rpc := make([]uintptr, 1)
-	runtime.Callers(2, rpc)
-	frame, _ := runtime.CallersFrames(rpc).Next()
-	n := strings.TrimPrefix(
-		frame.Function,
-		"github.com/charles-haynes/gazelle_test.MockWhatAPI.")
-	*m.Calls = append(*m.Calls, n)
-}
-
-func (m MockWhatAPI) Contains(name string) bool {
-	for _, v := range *m.Calls {
-		if v == name {
-			return true
-		}
-	}
-	return false
-}
-
-func (m MockWhatAPI) Print() {
-	for _, v := range *m.Calls {
-		fmt.Printf("%s\n", v)
-	}
-}
-
-func (m *MockWhatAPI) Reset() {
-	*m.Calls = (*m.Calls)[:0]
-}
-
-var (
-	errRequestFailed       = errors.New("Request failed")
-	errRequestFailedReason = func(err string) error { return fmt.Errorf("Request failed: %s", err) }
-)
-
-func checkResponseStatus(status, errorStr string) error {
-	if status != "success" {
-		if errorStr != "" {
-			return errRequestFailedReason(errorStr)
-		}
-		return errRequestFailed
-	}
-	return nil
-}
-
-func (m MockWhatAPI) GetJSON(requestURL string, responseObj interface{}) error {
-	m.Called()
-	return json.Unmarshal([]byte(m.JSON), responseObj)
-}
-func (m MockWhatAPI) Do(action string, params url.Values, result interface{}) error {
-	m.Called()
-	return nil
-}
-func (m MockWhatAPI) CreateDownloadURL(id int) (s string, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) Login(username, password string) error {
-	m.Called()
-	return nil
-}
-func (m MockWhatAPI) Logout() error {
-	m.Called()
-	return nil
-}
-func (m MockWhatAPI) GetAccount() (a whatapi.Account, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetMailbox(params url.Values) (M whatapi.Mailbox, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetConversation(id int) (C whatapi.Conversation, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetNotifications(params url.Values) (N whatapi.Notifications, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetAnnouncements() (A whatapi.Announcements, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetSubscriptions(params url.Values) (S whatapi.Subscriptions, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetCategories() (C whatapi.Categories, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetForum(id int, params url.Values) (F whatapi.Forum, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetThread(id int, params url.Values) (T whatapi.Thread, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetArtistBookmarks() (A whatapi.ArtistBookmarks, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetTorrentBookmarks() (T whatapi.TorrentBookmarks, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetArtist(id int, params url.Values) (A whatapi.Artist, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetRequest(id int, params url.Values) (R whatapi.Request, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetTorrent(id int, params url.Values) (G whatapi.GetTorrentStruct, e error) {
-	m.Called()
-	torrent := whatapi.TorrentResponse{}
-	e = m.GetJSON(m.JSON, &torrent)
-	if e != nil {
-		return torrent.Response, e
-	}
-	return torrent.Response, checkResponseStatus(torrent.Status, torrent.Error)
-	return
-}
-func (m MockWhatAPI) GetTorrentGroup(id int, params url.Values) (T whatapi.TorrentGroup, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) SearchTorrents(searchStr string, params url.Values) (T whatapi.TorrentSearch, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) SearchRequests(searchStr string, params url.Values) (R whatapi.RequestsSearch, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) SearchUsers(searchStr string, params url.Values) (U whatapi.UserSearch, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetTopTenTorrents(params url.Values) (T whatapi.TopTenTorrents, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetTopTenTags(params url.Values) (T whatapi.TopTenTags, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetTopTenUsers(params url.Values) (T whatapi.TopTenUsers, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) GetSimilarArtists(id, limit int) (S whatapi.SimilarArtists, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) ParseHTML(s string) (st string, e error) {
-	m.Called()
-	return
-}
-
-const torrent1JSON = `{"status":"success","response":{"group":{"wikiBody":"blah blah","wikiImage":"https:\/\/ptpimg.me\/yh5fqd.jpg","id":1,"name":"The Dark Side of the Moon","year":1973,"recordLabel":"","catalogueNumber":"","releaseType":1,"categoryId":1,"categoryName":"Music","time":"2019-08-28 17:46:53","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"Pink Floyd"}],"with":[],"conductor":[],"remixedBy":[],"producer":[]},"tags":["rock","experimental","progressive.rock","psychedelic","psychedelic.rock","space.rock","classic.rock","hard.rock","1970s","art.rock","british","staff.recs"]},"torrent":{"id":1,"infoHash":"C380B62A3EC6658597C56F45D596E8081B3F7A5C","media":"CD","format":"FLAC","encoding":"Lossless","remastered":true,"remasterYear":1988,"remasterTitle":"Japan MFSL UltraDisc #1, 24 Karat Gold","remasterRecordLabel":"Mobile Fidelity Sound Lab","remasterCatalogueNumber":"UDCD 517","scene":false,"hasLog":true,"hasCue":true,"logScore":70,"fileCount":12,"size":219114079,"seeders":100,"leechers":0,"snatched":414,"freeTorrent":false,"reported":false,"time":"2016-11-24 01:34:03","description":"[important]Staff: Technically trumped because EAC 0.95 logs are terrible. There is historic and sentimental value in keeping the first torrent ever uploaded to the site as well as a perfect modern rip. Take no action.[\/important]","fileList":"01 - Speak to Me.flac{{{3732587}}}|||02 -  Breathe.flac{{{14244409}}}|||03 - On the Run.flac{{{16541873}}}|||04 - Time.flac{{{35907465}}}|||05 -  The Great Gig in the Sky.flac{{{20671913}}}|||06 - Money.flac{{{37956922}}}|||07 -Us and Them.flac{{{39706774}}}|||08 - Any Colour You Like.flac{{{18736396}}}|||09 - Brain Damage.flac{{{20457034}}}|||10 - Eclipse.flac{{{11153655}}}|||Pink Floyd - Dark Side of the Moon.CUE{{{1435}}}|||Pink Floyd - Dark Side of the Moon.log{{{3616}}}","filePath":"Pink Floyd - Dark Side of the Moon (OMR MFSL 24k Gold Ultradisc II) fixed tags","userId":9,"username":"danger"}}}`
