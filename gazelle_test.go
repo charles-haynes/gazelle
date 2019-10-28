@@ -109,6 +109,52 @@ CREATE TABLE artists_groups (
 CREATE INDEX artists_groups_artistid ON artists_groups(tracker, artistid);
 CREATE INDEX artists_groups_groupid ON artists_groups(tracker, groupid);
 `
+	createFiles = `
+CREATE TABLE files (
+    tracker   STRING  NOT NULL,
+    torrentid INT     NOT NULL,
+    name      STRING  NOT NULL,
+    size      INTEGER NOT NULL,
+    FOREIGN KEY(tracker, torrentid) REFERENCES torrents(tracker, id)
+);
+CREATE UNIQUE INDEX files_torrentid ON files(tracker, torrentid, name);
+`
+	createTorrents = `
+CREATE TABLE torrents (
+    tracker         TEXT     NOT NULL,
+    id              INTEGER  NOT NULL,
+    groupid         INTEGER  NOT NULL,
+    hash            TEXT     UNIQUE,
+    media           TEXT     NOT NULL,
+    format          TEXT     NOT NULL,
+    encoding        TEXT     NOT NULL,
+    remastered      BOOL     NOT NULL,
+    remasteryear    INTEGER  NOT NULL,
+    remastertitle   TEXT     NOT NULL,
+    remasterlabel   TEXT     NOT NULL,
+    cataloguenumber TEXT,
+    scene           BOOL     NOT NULL,
+    haslog          BOOL     NOT NULL,
+    hascue          BOOL     NOT NULL,
+    logscore        INTEGER  NOT NULL,
+    filecount       INTEGER  NOT NULL,
+    size            INTEGER  NOT NULL,
+    seeders         INTEGER  NOT NULL,
+    leechers        INTEGER  NOT NULL,
+    snatched        INTEGER  NOT NULL,
+    freetorrent     BOOL     NOT NULL,
+    reported        BOOL,
+    time            DATETIME NOT NULL,
+    description     TEXT,
+    -- filelist
+    filepath        TEXT,
+    userid          INTEGER,
+    username        TEXT,
+    PRIMARY KEY(tracker, id),
+    FOREIGN KEY(tracker, groupid) REFERENCES groups(tracker, id)) WITHOUT ROWID;
+CREATE UNIQUE INDEX torrents_hash ON torrents(hash);
+CREATE INDEX torrents_groupid ON torrents(tracker, groupid);
+`
 )
 
 func LoadTestDB(db *sqlx.DB) error {
@@ -117,8 +163,10 @@ PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 ` +
 		createArtists +
-		createGroups +
 		createArtistsGroups +
+		createFiles +
+		createGroups +
+		createTorrents +
 		`
 COMMIT;
 PRAGMA foreign_keys=ON;
@@ -913,5 +961,184 @@ func TestNewGroupStruct(t *testing.T) {
 	}
 	if err := GroupsEqual(expected, r); err != nil {
 		t.Errorf("expected %v got %v, differs in %s", expected, r, err)
+	}
+}
+
+func TestUpdateFiles(t *testing.T) {
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec(`
+DELETE FROM artists_groups;
+DELETE FROM artists;
+DELETE FROM groups;
+DELETE FROM torrents;
+DELETE FROM files;
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
+INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	to := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{Name: "tracker"},
+			},
+			ID: 2,
+		},
+		ID:    1,
+		Files: []whatapi.FileStruct{{"file3", 3}, {"file4", 4}},
+	}
+	err = to.UpdateFiles(tx)
+	if err != nil {
+		t.Error(err)
+	}
+	type file struct {
+		Tracker   string
+		TorrentID int64
+		Name      string
+		Size      int64
+	}
+	var r []file
+	err = tx.Select(&r, `SELECT * FROM files`)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []file{
+		{"tracker", 1, "file3", 3},
+		{"tracker", 1, "file4", 4},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+}
+
+func TestTorrentUpdate(t *testing.T) {
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec(`
+DELETE FROM artists_groups;
+DELETE FROM artists;
+DELETE FROM groups;
+DELETE FROM torrents;
+DELETE FROM files;
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	hash := "hash"
+	time := time.Date(1234, time.May, 6, 7, 8, 9, 0, time.UTC)
+	to := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{Name: "tracker"},
+			},
+			ID: 2,
+		},
+		ID:                      1,
+		Hash:                    &hash,
+		Media:                   "media",
+		Format:                  "format",
+		Encoding:                "encoding",
+		Remastered:              true,
+		RemasterYear:            4321,
+		RemasterTitle:           "remastertitle",
+		RemasterRecordLabel:     "remasterlabel",
+		RemasterCatalogueNumber: nil,
+		Scene:                   true,
+		HasLog:                  true,
+		HasCue:                  false,
+		LogScore:                100,
+		LogChecksum:             nil,
+		FileCount:               3,
+		Size:                    4,
+		Seeders:                 5,
+		Leechers:                6,
+		Snatched:                0,
+		FreeTorrent:             false,
+		Reported:                nil,
+		Time:                    time,
+		Description:             nil,
+		FilePath:                nil,
+		UserID:                  nil,
+		Username:                nil,
+		Files:                   []whatapi.FileStruct{{"file3", 3}, {"file4", 4}},
+	}
+	err = to.Update(tx)
+	if err != nil {
+		t.Error(err)
+	}
+	type DBTorrent struct {
+		Tracker         string
+		Id              int64
+		Groupid         int64
+		Hash            string
+		Media           string
+		Format          string
+		Encoding        string
+		Remastered      bool
+		Remasteryear    int64
+		Remastertitle   string
+		Remasterlabel   string
+		Cataloguenumber *string
+		Scene           bool
+		Haslog          bool
+		Hascue          bool
+		Logscore        int64
+		Filecount       int64
+		Size            int64
+		Seeders         int64
+		Leechers        int64
+		Snatched        int64
+		Freetorrent     bool
+		Reported        *bool
+		Time            string
+		Description     *string
+		Filepath        *string
+		Userid          *int64
+		Username        *string
+	}
+	var r []DBTorrent
+	err = tx.Select(&r, `SELECT * FROM torrents`)
+	expected := []DBTorrent{
+		{
+			Tracker:         "tracker",
+			Id:              1,
+			Groupid:         2,
+			Hash:            "hash",
+			Media:           "media",
+			Format:          "format",
+			Encoding:        "encoding",
+			Remastered:      true,
+			Remasteryear:    4321,
+			Remastertitle:   "remastertitle",
+			Remasterlabel:   "remasterlabel",
+			Cataloguenumber: nil,
+			Scene:           true,
+			Haslog:          true,
+			Hascue:          false,
+			Logscore:        100,
+			Filecount:       3,
+			Size:            4,
+			Seeders:         5,
+			Leechers:        6,
+			Snatched:        0,
+			Freetorrent:     false,
+			Reported:        nil,
+			Time:            "1234-05-06T07:08:09Z",
+			Description:     nil,
+			Filepath:        nil,
+			Userid:          nil,
+			Username:        nil,
+		},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
 	}
 }
