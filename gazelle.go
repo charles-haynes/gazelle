@@ -202,19 +202,20 @@ func NewExtendedArtistMap(tracker Tracker, am whatapi.ExtendedArtistMap) Artists
 
 type Group struct {
 	Artists
-	ID              int64     `db:"groupid"`
-	Name            string    `db:"groupname"`
-	Year            int64     `db:"year"`
-	RecordLabel     string    `db:"recordlabel"`
-	CatalogueNumber *string   `db:"cataloguenumber"`
-	ReleaseTypeF    int64     `db:"releasetype"`
-	CategoryID      int64     `db:"categoryid"`
-	CategoryName    string    `db:"categoryname"`
-	Time            time.Time `db:"time"`
-	VanityHouse     bool      `db:"vanityhouse"`
-	WikiImage       *string   `db:"wikiimage"`
-	WikiBody        *string   `db:"wikibody"`
-	Tags            string    `db:"tags"`
+	ID              int64      `db:"groupid"`
+	Name            string     `db:"groupname"`
+	Year            int64      `db:"year"`
+	RecordLabel     *string    `db:"recordlabel"`
+	CatalogueNumber *string    `db:"cataloguenumber"`
+	ReleaseTypeF    int64      `db:"releasetype"`
+	CategoryID      *int64     `db:"categoryid"`
+	CategoryName    *string    `db:"categoryname"`
+	Time            *time.Time `db:"time"`
+	VanityHouse     bool       `db:"vanityhouse"`
+	WikiImage       *string    `db:"wikiimage"`
+	WikiBody        *string    `db:"wikibody"`
+	IsBookmarked    *bool      `db:"isbookmarked"`
+	Tags            string     `db:"tags"`
 }
 
 func (g Group) ReleaseType() string {
@@ -339,7 +340,7 @@ func (g Group) Update(tx *sqlx.Tx) error {
 		g.Year,              // year
 		g.RecordLabel,       // recordlabel
 		g.CatalogueNumber,   // cataloguenumber
-		g.ReleaseType(),     // releasetype (like "Album")
+		g.ReleaseTypeF,      // releasetype
 		g.CategoryID,        // categoryid
 		g.CategoryName,      // categoryname
 		g.Time,              // time
@@ -350,12 +351,12 @@ func (g Group) Update(tx *sqlx.Tx) error {
 		return err
 	}
 
-	err = g.UpdateArtistsGroups(tx)
+	err = g.Artists.Update(tx)
 	if err != nil {
 		return err
 	}
 
-	err = g.Artists.Update(tx)
+	err = g.UpdateArtistsGroups(tx)
 	if err != nil {
 		return err
 	}
@@ -370,6 +371,7 @@ func NewGroupStruct(tracker Tracker, gs whatapi.GroupStruct) (g Group, err error
 	if err != nil {
 		return g, err
 	}
+	categoryID := int64(gs.CategoryID)
 	g = Group{
 		Artists:         al,
 		WikiImage:       &gs.WikiImageF,
@@ -377,12 +379,12 @@ func NewGroupStruct(tracker Tracker, gs whatapi.GroupStruct) (g Group, err error
 		ID:              int64(gs.ID()),
 		Name:            gs.Name(),
 		Year:            int64(gs.Year()),
-		RecordLabel:     gs.RecordLabel(),
+		RecordLabel:     &gs.RecordLabelF,
 		CatalogueNumber: &gs.CatalogueNumberF,
 		ReleaseTypeF:    int64(gs.ReleaseType()),
-		CategoryID:      int64(gs.CategoryID),
-		CategoryName:    gs.CategoryName,
-		Time:            gtime,
+		CategoryID:      &categoryID,
+		CategoryName:    &gs.CategoryName,
+		Time:            &gtime,
 		VanityHouse:     gs.VanityHouse,
 		Tags:            strings.Join(gs.Tags(), ","),
 	}
@@ -864,11 +866,12 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 					"Artist": {{Name: r.Artist}},
 				},
 			}
+			groupCategory := int64(r.GroupCategory)
 			g := Group{
 				Artists:    a,
 				ID:         int64(r.GroupID),
 				Name:       r.GroupName,
-				CategoryID: int64(r.GroupCategory),
+				CategoryID: &groupCategory,
 				Year:       int64(r.GroupYear),
 				Tags:       strings.Join(r.Tags, ","),
 				WikiImage:  &r.WikiImage,

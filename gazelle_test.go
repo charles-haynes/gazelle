@@ -452,6 +452,99 @@ INSERT INTO groups VALUES("tracker",NULL,NULL,3,"baz",0,"","","",NULL,NULL,NULL,
 	}
 }
 
+func TestBint(t *testing.T) {
+	if r := gazelle.Bint(true); r != 1 {
+		t.Errorf("expected %v got %v", 1, r)
+	}
+	if r := gazelle.Bint(false); r != 0 {
+		t.Errorf("expected %v got %v", 0, r)
+	}
+}
+
+func TestGroupUpdate(t *testing.T) {
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec(`
+DELETE FROM artists_groups;
+DELETE FROM groups;
+DELETE FROM artists;
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	var count int
+	err = tx.Get(&count, `SELECT COUNT(*) FROM groups`)
+	if err != nil {
+		t.Error(err)
+	}
+	if count != 0 {
+		t.Errorf("expected group to have 0 rows, got %d", count)
+	}
+	g := gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: gazelle.Tracker{
+				Name: "tracker",
+			},
+			Artists: map[string][]gazelle.Artist{
+				"role": {{1, "artist1"}, {2, "artist2"}},
+			},
+		},
+		ID:   3,
+		Name: "group",
+	}
+	err = g.Update(tx)
+	if err != nil {
+		t.Error(err)
+	}
+	type DBGroup struct {
+		Tracker         string
+		Wikibody        *string
+		Wikiimage       *string
+		ID              int64
+		Name            string
+		Year            int64
+		Recordlabel     *string
+		Cataloguenumber *string
+		Releasetype     int64
+		Categoryid      *int64
+		Categoryname    *string
+		Time            *string
+		Vanityhouse     bool
+		Isbookmarked    *bool
+		Tags            string
+	}
+	var r []DBGroup
+	err = tx.Select(&r, `SELECT * FROM groups`)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []DBGroup{
+		{
+			Tracker:         "tracker",
+			Wikibody:        nil,
+			Wikiimage:       nil,
+			ID:              3,
+			Name:            "group",
+			Year:            0,
+			Recordlabel:     nil,
+			Cataloguenumber: nil,
+			Releasetype:     0,
+			Categoryid:      nil,
+			Categoryname:    nil,
+			Time:            nil,
+			Vanityhouse:     false,
+			Isbookmarked:    nil,
+			Tags:            "",
+		},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v but got %v", expected, r)
+	}
+}
+
 func LoadTestDB(db *sqlx.DB) error {
 	_, err := db.Exec(`
 PRAGMA foreign_keys=OFF;
@@ -476,19 +569,19 @@ CREATE INDEX artists_name ON artists(name COLLATE NOCASE);
 
 CREATE TABLE groups (
     tracker         TEXT     NOT NULL,
-    wikibody        TEXT, -- not in artist
-    wikiimage       TEXT, -- not in artist
+    wikibody        TEXT, --          not in artist, search, top10
+    wikiimage       TEXT, --          not in search
     id              INTEGER  NOT NULL,
     name            TEXT     NOT NULL,
     year            INTEGER  NOT NULL,
-    recordlabel     TEXT     NOT NULL,
-    cataloguenumber TEXT     NOT NULL,
+    recordlabel     TEXT, --          not in search or top10
+    cataloguenumber TEXT, --          not in search or top10
     releasetype     INTEGER  NOT NULL,
-    categoryid      INTEGER, -- not in artist
-    categoryname    TEXT, --  not in artist
-    time            DATETIME, -- not in artist
+    categoryid      INTEGER, --       not search
+    categoryname    TEXT, --          not in artist
+    time            DATETIME, --      not in artist
     vanityhouse     BOOL     NOT NULL,
-    isbookmarked    BOOL, -- not in torrent
+    isbookmarked    BOOL, --          not in torrent
     -- map artists to group
     tags            STRING   NOT NULL, -- concatenated with ,
     PRIMARY KEY(tracker, id)) WITHOUT ROWID;
