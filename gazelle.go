@@ -36,14 +36,17 @@ import (
 
 type Tracker struct {
 	whatapi.WhatAPI
-	Name         string `db:"tracker"`
-	Other        string
-	Path         string
-	Host         string
-	Conf         string
-	ReleaseTypes map[int64]string
-	Categories   map[int64]string
-	TokenSize    int64 // torrents bigger than this, try to use a token
+	Name            string `db:"tracker"`
+	Other           string
+	Path            string
+	Host            string
+	Conf            string
+	ReleaseTypes    map[int64]string
+	Categories      map[int64]string
+	TokenSize       int64 // torrents bigger than this, try to use a token
+	updatedArtists  map[int64]struct{}
+	updatedGroups   map[int64]struct{}
+	updatedTorrents map[int]struct{}
 }
 
 type Artist struct {
@@ -51,15 +54,12 @@ type Artist struct {
 	Name string `db:"name"`
 }
 
-var updatedArtists = map[string]map[int64]struct{}{}
-
 func (a Artist) Update(tx *sqlx.Tx, tracker Tracker) error {
-	if _, ok := updatedArtists[tracker.Name]; ok {
-		if _, ok := updatedArtists[tracker.Name][a.ID]; ok {
-			return nil
-		}
-	} else {
-		updatedArtists[tracker.Name] = map[int64]struct{}{}
+	if tracker.updatedArtists == nil {
+		tracker.updatedArtists = map[int64]struct{}{}
+	}
+	if _, ok := tracker.updatedArtists[a.ID]; ok {
+		return nil
 	}
 	_, err := tx.Exec(
 		`INSERT OR REPLACE INTO artists (tracker,id,name) VALUES (?,?,?)`,
@@ -67,7 +67,7 @@ func (a Artist) Update(tx *sqlx.Tx, tracker Tracker) error {
 	if err != nil {
 		return err
 	}
-	updatedArtists[tracker.Name][a.ID] = struct{}{}
+	tracker.updatedArtists[a.ID] = struct{}{}
 	return nil
 }
 
@@ -298,15 +298,15 @@ func Bint(b bool) int {
 	return 0
 }
 
-type grp struct {
-	Tracker string
-	ID      int64
-}
-
+/*
 var updatedGroups = map[grp]struct{}{}
+*/
 
 func (g Group) Update(tx *sqlx.Tx) error {
-	if _, ok := updatedGroups[grp{g.Tracker.Name, g.ID}]; ok {
+	if g.updatedGroups == nil {
+		g.updatedGroups = map[int64]struct{}{}
+	}
+	if _, ok := g.updatedGroups[g.ID]; ok {
 		return nil
 	}
 	_, err := tx.Exec(
@@ -361,7 +361,7 @@ func (g Group) Update(tx *sqlx.Tx) error {
 		return err
 	}
 
-	updatedGroups[grp{g.Tracker.Name, g.ID}] = struct{}{}
+	g.updatedGroups[g.ID] = struct{}{}
 	return nil
 }
 
@@ -406,15 +406,16 @@ func (t Torrent) UpdateFiles(tx *sqlx.Tx) error {
 	return nil
 }
 
+/*
 var updatedTorrents = map[string]map[int]struct{}{}
+*/
 
 func (t Torrent) Update(tx *sqlx.Tx) error {
-	if _, ok := updatedTorrents[t.Tracker.Name]; ok {
-		if _, ok := updatedTorrents[t.Tracker.Name][t.ID]; ok {
-			return nil
-		}
-	} else {
-		updatedTorrents[t.Tracker.Name] = map[int]struct{}{}
+	if t.updatedTorrents == nil {
+		t.updatedTorrents = map[int]struct{}{}
+	}
+	if _, ok := t.updatedTorrents[t.ID]; ok {
+		return nil
 	}
 	if err := t.Group.Update(tx); err != nil {
 		return err
@@ -482,7 +483,7 @@ func (t Torrent) Update(tx *sqlx.Tx) error {
 	if err := t.UpdateFiles(tx); err != nil {
 		return err
 	}
-	updatedTorrents[t.Tracker.Name][t.ID] = struct{}{}
+	t.updatedTorrents[t.ID] = struct{}{}
 	return nil
 }
 
