@@ -345,7 +345,8 @@ func (m MockWhatAPI) ParseHTML(s string) (st string, e error) {
 	return
 }
 
-const torrent1JSON = `{"status":"success","response":{"group":{"wikiBody":"blah blah","wikiImage":"https:\/\/ptpimg.me\/yh5fqd.jpg","id":1,"name":"The Dark Side of the Moon","year":1973,"recordLabel":"","catalogueNumber":"","releaseType":1,"categoryId":1,"categoryName":"Music","time":"2019-08-28 17:46:53","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"Pink Floyd"}],"with":[],"conductor":[],"remixedBy":[],"producer":[]},"tags":["rock","experimental","progressive.rock","psychedelic","psychedelic.rock","space.rock","classic.rock","hard.rock","1970s","art.rock","british","staff.recs"]},"torrent":{"id":1,"infoHash":"C380B62A3EC6658597C56F45D596E8081B3F7A5C","media":"CD","format":"FLAC","encoding":"Lossless","remastered":true,"remasterYear":1988,"remasterTitle":"Japan MFSL UltraDisc #1, 24 Karat Gold","remasterRecordLabel":"Mobile Fidelity Sound Lab","remasterCatalogueNumber":"UDCD 517","scene":false,"hasLog":true,"hasCue":true,"logScore":70,"fileCount":12,"size":219114079,"seeders":100,"leechers":0,"snatched":414,"freeTorrent":false,"reported":false,"time":"2016-11-24 01:34:03","description":"[important]Staff: Technically trumped because EAC 0.95 logs are terrible. There is historic and sentimental value in keeping the first torrent ever uploaded to the site as well as a perfect modern rip. Take no action.[\/important]","fileList":"01 - Speak to Me.flac{{{3732587}}}|||02 -  Breathe.flac{{{14244409}}}|||03 - On the Run.flac{{{16541873}}}|||04 - Time.flac{{{35907465}}}|||05 -  The Great Gig in the Sky.flac{{{20671913}}}|||06 - Money.flac{{{37956922}}}|||07 -Us and Them.flac{{{39706774}}}|||08 - Any Colour You Like.flac{{{18736396}}}|||09 - Brain Damage.flac{{{20457034}}}|||10 - Eclipse.flac{{{11153655}}}|||Pink Floyd - Dark Side of the Moon.CUE{{{1435}}}|||Pink Floyd - Dark Side of the Moon.log{{{3616}}}","filePath":"Pink Floyd - Dark Side of the Moon (OMR MFSL 24k Gold Ultradisc II) fixed tags","userId":9,"username":"danger"}}}`
+const torrent1JSON = `{"status":"success","response":{"group":{"wikiBody":"wikibody","wikiImage":"wikiimage","id":2,"name":"groupname","year":1234,"recordLabel":"recordlabel","catalogueNumber":"cataloguenumbr","releaseType":1,"categoryId":1,"categoryName":"categoryname","time":"1234-05-06 07:08:09","vanityHouse":true,"isBookmarked":true,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"artist1"},{"id":2,"name":"artist2"}],"with":[{"id":3,"name":"artist3"}],"conductor":[],"remixedBy":[],"producer":[]},"tags":["tag1","tag2"]},"torrent":{"id":1,"infoHash":"hash","media":"media","format":"format","encoding":"encoding","remastered":true,"remasterYear":4321,"remasterTitle":"remastertitle","remasterRecordLabel":"remasterrecordlabel","remasterCatalogueNumber":"remastercatalognumber","scene":true,"hasLog":true,"hasCue":true,"logScore":0,"fileCount":1,"size":2,"seeders":0,"leechers":0,"snatched":0,"freeTorrent":false,"reported":true,"time":"4321-11-30 11:59:59","description":"description","fileList":"apifile1{{{1}}}|||apifile2{{{2}}}","filePath":"filepath","userId":0,"username":"username"}}}`
+const torrentdsmJSON = `{"status":"success","response":{"group":{"wikiBody":"blah blah","wikiImage":"https:\/\/ptpimg.me\/yh5fqd.jpg","id":1,"name":"The Dark Side of the Moon","year":1973,"recordLabel":"","catalogueNumber":"","releaseType":1,"categoryId":1,"categoryName":"Music","time":"2019-08-28 17:46:53","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"Pink Floyd"}],"with":[],"conductor":[],"remixedBy":[],"producer":[]},"tags":["rock","experimental","progressive.rock","psychedelic","psychedelic.rock","space.rock","classic.rock","hard.rock","1970s","art.rock","british","staff.recs"]},"torrent":{"id":1,"infoHash":"C380B62A3EC6658597C56F45D596E8081B3F7A5C","media":"CD","format":"FLAC","encoding":"Lossless","remastered":true,"remasterYear":1988,"remasterTitle":"Japan MFSL UltraDisc #1, 24 Karat Gold","remasterRecordLabel":"Mobile Fidelity Sound Lab","remasterCatalogueNumber":"UDCD 517","scene":false,"hasLog":true,"hasCue":true,"logScore":70,"fileCount":12,"size":219114079,"seeders":100,"leechers":0,"snatched":414,"freeTorrent":false,"reported":false,"time":"2016-11-24 01:34:03","description":"[important]Staff: Technically trumped because EAC 0.95 logs are terrible. There is historic and sentimental value in keeping the first torrent ever uploaded to the site as well as a perfect modern rip. Take no action.[\/important]","fileList":"01 - Speak to Me.flac{{{3732587}}}|||02 -  Breathe.flac{{{14244409}}}|||03 - On the Run.flac{{{16541873}}}|||04 - Time.flac{{{35907465}}}|||05 -  The Great Gig in the Sky.flac{{{20671913}}}|||06 - Money.flac{{{37956922}}}|||07 -Us and Them.flac{{{39706774}}}|||08 - Any Colour You Like.flac{{{18736396}}}|||09 - Brain Damage.flac{{{20457034}}}|||10 - Eclipse.flac{{{11153655}}}|||Pink Floyd - Dark Side of the Moon.CUE{{{1435}}}|||Pink Floyd - Dark Side of the Moon.log{{{3616}}}","filePath":"Pink Floyd - Dark Side of the Moon (OMR MFSL 24k Gold Ultradisc II) fixed tags","userId":9,"username":"danger"}}}`
 
 func TestArtistUpdate(t *testing.T) {
 	a := gazelle.Artist{2717, "artist"}
@@ -610,7 +611,6 @@ func TestTorrentFill_AlreadyFilled(t *testing.T) {
 		Files:    []whatapi.FileStruct{},
 		FilePath: &s,
 	}
-
 	err = to.Fill(tx)
 	if err != nil {
 		t.Error(err)
@@ -1139,6 +1139,188 @@ DELETE FROM files;
 		},
 	}
 	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+}
+
+func TestTorrentGetFiles_AlreadyFilled(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  `{"status":"failure","error":"bad id parameter"}`,
+		Calls: &[]string{},
+	}
+	_, err := db.Exec(`
+DELETE FROM files;
+DELETE FROM torrents;
+INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,1,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+INSERT INTO files VALUES("tracker", 1, "dbfilename", 2);
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	to := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{
+					WhatAPI: m,
+					Name:    "tracker",
+				},
+			},
+		},
+		ID:        1,
+		FileCount: 1,
+		Files:     []whatapi.FileStruct{{"existingfilename", 2}},
+	}
+	err = to.GetFiles(db)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []whatapi.FileStruct{{"existingfilename", 2}}
+	if !reflect.DeepEqual(expected, to.Files) {
+		t.Errorf("expected files to be %v got %v", expected, to.Files)
+	}
+}
+
+func TestTorrentGetFiles_FromDB(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  `{"status":"failure","error":"bad id parameter"}`,
+		Calls: &[]string{},
+	}
+	_, err := db.Exec(`
+DELETE FROM files;
+DELETE FROM torrents;
+INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,1,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	to := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{
+					WhatAPI: m,
+					Name:    "tracker",
+				},
+			},
+		},
+		ID:        1,
+		FileCount: 1,
+	}
+	err = to.GetFiles(db)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []whatapi.FileStruct{{"dbfilename", 3}}
+	if !reflect.DeepEqual(expected, to.Files) {
+		t.Errorf("expected files to be %v got %v", expected, to.Files)
+	}
+}
+
+func TestTorrentGetFiles_FromAPI(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  torrent1JSON,
+		Calls: &[]string{},
+	}
+	_, err := db.Exec(`
+DELETE FROM files;
+DELETE FROM torrents;
+INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,1,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	to := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{
+					WhatAPI: m,
+					Name:    "tracker",
+				},
+			},
+		},
+		ID:        1,
+		FileCount: 2,
+	}
+	err = to.GetFiles(db)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []whatapi.FileStruct{{"apifile1", 1}, {"apifile2", 2}}
+	if !reflect.DeepEqual(expected, to.Files) {
+		t.Errorf("expected files to be %v got %v", expected, to.Files)
+	}
+}
+
+func TestTorrentString_NotRemastered(t *testing.T) {
+	remasterCatalogueNumber := "remastercataloguenumber"
+	to := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{
+					Name: "tracker",
+					ReleaseTypes: map[int64]string{
+						1: "releasetype1",
+					},
+				},
+				Artists: map[string][]gazelle.Artist{
+					"Artist": {{1, "artist"}},
+				},
+			},
+			Year:         1234,
+			Name:         "group",
+			ReleaseTypeF: 1,
+		},
+		ID:                      1,
+		Media:                   "media",
+		Format:                  "format",
+		Encoding:                "encoding",
+		Remastered:              false,
+		RemasterYear:            4321,
+		RemasterTitle:           "remastertitle",
+		RemasterRecordLabel:     "remasterlabel",
+		RemasterCatalogueNumber: &remasterCatalogueNumber,
+	}
+	r := to.String()
+	expected := "tracker-1: artist - group (1234) [media format encoding] [releasetype1]"
+	if r != expected {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+}
+
+func TestTorrentString_Remastered(t *testing.T) {
+	remasterCatalogueNumber := "remastercataloguenumber"
+	to := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{
+					Name: "tracker",
+					ReleaseTypes: map[int64]string{
+						1: "releasetype1",
+					},
+				},
+				Artists: map[string][]gazelle.Artist{
+					"Artist": {{1, "artist"}},
+				},
+			},
+			Year:         1234,
+			Name:         "group",
+			ReleaseTypeF: 1,
+		},
+		ID:                      1,
+		Hash:                    nil,
+		Media:                   "media",
+		Format:                  "format",
+		Encoding:                "encoding",
+		Remastered:              true,
+		RemasterYear:            4321,
+		RemasterTitle:           "remastertitle",
+		RemasterRecordLabel:     "remasterlabel",
+		RemasterCatalogueNumber: &remasterCatalogueNumber,
+	}
+	r := to.String()
+	expected := "tracker-1: artist - group (1234) [media format encoding]{(4321) remasterlabel/remastercataloguenumber/remastertitle} [releasetype1]"
+	if r != expected {
 		t.Errorf("expected %v got %v", expected, r)
 	}
 }

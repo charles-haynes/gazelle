@@ -503,7 +503,7 @@ WHERE tracker=? AND torrentid=?`, t.Tracker.Name, t.ID)
 	if err == nil {
 		err = tx.Commit()
 	}
-	return nil
+	return err
 }
 
 func (t *Torrent) String() string {
