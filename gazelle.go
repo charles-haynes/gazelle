@@ -254,7 +254,6 @@ type Torrent struct {
 	UserID                  *int      `db:"userid"`
 	Username                *string   `db:"username"`
 	Files                   []whatapi.FileStruct
-	Logs                    []string
 }
 
 func (t Torrent) ShortName() string {
