@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"html"
 	"net/url"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -537,13 +536,24 @@ func NullableBInt(b *bool) *int {
 	return &i
 }
 
+func equalArtists(a, b []whatapi.ArtistAlias) bool {
+	for i, a := range a {
+		if a.ID != b[i].ID ||
+			a.Name != b[i].Name ||
+			a.AliasID != b[i].AliasID {
+			return false
+		}
+	}
+	return true
+}
+
 func NewGroupSearchResult(tracker Tracker, srs whatapi.TorrentSearchResultStruct) (Group, error) {
 	if len(srs.Torrents) == 0 {
 		return Group{},
 			fmt.Errorf("search result has no torrents group %d", srs.GroupID)
 	}
 	for i, t := range srs.Torrents {
-		if !reflect.DeepEqual(srs.Torrents[0].Artists, t.Artists) {
+		if !equalArtists(srs.Torrents[0].Artists, t.Artists) {
 			return Group{},
 				fmt.Errorf(
 					"search result group %d, torrent 0 "+

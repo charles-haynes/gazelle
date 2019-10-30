@@ -503,11 +503,11 @@ func TestNewMusicInfo(t *testing.T) {
 func TestNewExtendedArtistMap(t *testing.T) {
 	tracker := gazelle.Tracker{Name: "tracker"}
 	am := whatapi.ExtendedArtistMap{
-		"1": []whatapi.ArtistGroupArtist{
+		"1": []whatapi.ArtistAlias{
 			{1, "artist1", 4},
 			{2, "artist2", 5},
 		},
-		"2": []whatapi.ArtistGroupArtist{{3, "artist3", 6}},
+		"2": []whatapi.ArtistAlias{{3, "artist3", 6}},
 	}
 	expected := gazelle.Artists{
 		Tracker: tracker,
@@ -1321,6 +1321,334 @@ func TestTorrentString_Remastered(t *testing.T) {
 	r := to.String()
 	expected := "tracker-1: artist - group (1234) [media format encoding]{(4321) remasterlabel/remastercataloguenumber/remastertitle} [releasetype1]"
 	if r != expected {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+}
+
+func TestNullableString(t *testing.T) {
+	r := gazelle.NullableString(nil)
+	if r != "" {
+		t.Errorf(`expected "" got "%s"`, r)
+	}
+
+	s := "string"
+	r = gazelle.NullableString(&s)
+	if s != r {
+		t.Errorf(`expected "%s" got "%s"`, s, r)
+	}
+}
+
+func TestNullableBInt(t *testing.T) {
+	r := gazelle.NullableBInt(nil)
+	if r != nil {
+		t.Errorf(`expected nil got %#v`, r)
+	}
+
+	b := true
+	expected := 1
+	r = gazelle.NullableBInt(&b)
+	if r == nil {
+		t.Errorf(`expected *int got nil`)
+	}
+	if expected != *r {
+		t.Errorf(`expected %v got %v`, expected, *r)
+	}
+}
+
+func TestNewGroupSearchResult_NoTorrents(t *testing.T) {
+	tracker := gazelle.Tracker{}
+	srs := whatapi.TorrentSearchResultStruct{}
+	_, err := gazelle.NewGroupSearchResult(tracker, srs)
+	if err == nil {
+		t.Errorf("expected srs with no torrents to fail")
+	}
+}
+
+func TestNewGroupSearchResult_EmptyTorrents(t *testing.T) {
+	tracker := gazelle.Tracker{}
+	srs := whatapi.TorrentSearchResultStruct{
+		Torrents: []whatapi.SearchTorrentStruct{
+			{},
+		},
+	}
+	r, err := gazelle.NewGroupSearchResult(tracker, srs)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := gazelle.Group{
+		Artists: gazelle.Artists{
+			Artists: map[string][]gazelle.Artist{"Artist": {}},
+		},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected \n%v\n got \n%v", expected, r)
+	}
+}
+
+func TestNewGroupSearchResult_NonEmptyTorrents(t *testing.T) {
+	tracker := gazelle.Tracker{}
+	srs := whatapi.TorrentSearchResultStruct{
+		Torrents: []whatapi.SearchTorrentStruct{
+			{Artists: []whatapi.ArtistAlias{
+				{1, "artist1", 11}, {2, "artist2", 22}}},
+			{Artists: []whatapi.ArtistAlias{
+				{1, "artist1", 11}, {2, "artist2", 22}}},
+		},
+		GroupID:      3,
+		GroupName:    "group3",
+		GroupYear:    4321,
+		ReleaseTypeF: 4,
+		TagsF:        []string{"tag1", "tag2"},
+	}
+	r, err := gazelle.NewGroupSearchResult(tracker, srs)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := gazelle.Group{
+		Artists: gazelle.Artists{
+			Artists: map[string][]gazelle.Artist{
+				"Artist": {{1, "artist1"}, {2, "artist2"}},
+			},
+		},
+		ID:           3,
+		Name:         "group3",
+		Year:         4321,
+		ReleaseTypeF: 4,
+		Tags:         "tag1,tag2",
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected \n%v\n got \n%v", expected, r)
+	}
+}
+
+func TestNewSearchTorrentStruct_EmptySearchTorrentStruct(t *testing.T) {
+	g := gazelle.Group{}
+	rt := whatapi.SearchTorrentStruct{
+		Time: "1234-05-06 07:08:09",
+	}
+	r, err := gazelle.NewSearchTorrentStruct(g, rt)
+	if err != nil {
+		t.Error(err)
+	}
+	catalogueNumber := ""
+	expected := gazelle.Torrent{
+		RemasterCatalogueNumber: &catalogueNumber,
+		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected \n%v \ngot \n%v", expected, r)
+	}
+}
+
+func TestNewSearchTorrentStruct(t *testing.T) {
+	g := gazelle.Group{
+		ID: 1,
+	}
+	rt := whatapi.SearchTorrentStruct{
+		TorrentID:                2,
+		MediaF:                   "media",
+		FormatF:                  "format",
+		EncodingF:                "encoding",
+		RemasteredF:              true,
+		RemasterYearF:            4321,
+		RemasterTitleF:           "title",
+		RemasterCatalogueNumberF: "cataloguenumber",
+		SceneF:                   true,
+		HasLogF:                  true,
+		HasCue:                   false,
+		LogScore:                 100,
+		FileCountF:               3,
+		Size:                     4,
+		Seeders:                  5,
+		Leechers:                 6,
+		Time:                     "1234-05-06 07:08:09",
+	}
+	r, err := gazelle.NewSearchTorrentStruct(g, rt)
+	if err != nil {
+		t.Error(err)
+	}
+	catalogueNumber := "cataloguenumber"
+	expected := gazelle.Torrent{
+		Group: gazelle.Group{
+			ID: 1,
+		},
+		ID:                      2,
+		Media:                   "media",
+		Format:                  "format",
+		Encoding:                "encoding",
+		Remastered:              true,
+		RemasterYear:            4321,
+		RemasterTitle:           "title",
+		RemasterCatalogueNumber: &catalogueNumber,
+		Scene:                   true,
+		HasLog:                  true,
+		LogScore:                100,
+		FileCount:               3,
+		Size:                    4,
+		Seeders:                 5,
+		Leechers:                6,
+		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected \n%v \ngot \n%v", expected, r)
+	}
+}
+
+func TestNewTorrentSearch_EmptyTorrentSearch(t *testing.T) {
+	tracker := gazelle.Tracker{}
+	ts := whatapi.TorrentSearch{}
+	r, err := gazelle.NewTorrentSearch(tracker, ts)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []gazelle.Torrent{}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+}
+
+func TestNewTorrentSearch(t *testing.T) {
+	tracker := gazelle.Tracker{Name: "tracker"}
+	ts := whatapi.TorrentSearch{
+		Results: []whatapi.TorrentSearchResultStruct{
+			{
+				Torrents: []whatapi.SearchTorrentStruct{
+					{
+						TorrentID: 2,
+						Artists: []whatapi.ArtistAlias{
+							{1, "artist1", 11},
+							{2, "artist2", 22},
+						},
+						MediaF:                   "media",
+						FormatF:                  "format",
+						EncodingF:                "encoding",
+						RemasteredF:              true,
+						RemasterYearF:            4321,
+						RemasterTitleF:           "title",
+						RemasterCatalogueNumberF: "cataloguenumber",
+						SceneF:                   true,
+						HasLogF:                  true,
+						HasCue:                   false,
+						LogScore:                 100,
+						FileCountF:               3,
+						Size:                     4,
+						Seeders:                  5,
+						Leechers:                 6,
+						Time:                     "1234-05-06 07:08:09",
+					},
+					{
+						TorrentID: 3,
+						Artists: []whatapi.ArtistAlias{
+
+							{1, "artist1", 11},
+							{2, "artist2", 22},
+						},
+						MediaF:                   "media",
+						FormatF:                  "format",
+						EncodingF:                "encoding",
+						RemasteredF:              true,
+						RemasterYearF:            4321,
+						RemasterTitleF:           "title",
+						RemasterCatalogueNumberF: "cataloguenumber",
+						SceneF:                   true,
+						HasLogF:                  true,
+						HasCue:                   false,
+						LogScore:                 100,
+						FileCountF:               3,
+						Size:                     4,
+						Seeders:                  5,
+						Leechers:                 6,
+						Time:                     "1234-05-06 07:08:09",
+					},
+				},
+				GroupID:      3,
+				GroupName:    "group3",
+				GroupYear:    4321,
+				ReleaseTypeF: 4,
+				TagsF:        []string{"tag1", "tag2"},
+			},
+		},
+	}
+	r, err := gazelle.NewTorrentSearch(tracker, ts)
+	if err != nil {
+		t.Error(err)
+	}
+	catalogueNumber := "cataloguenumber"
+	expected := []gazelle.Torrent{
+		{
+			Group: gazelle.Group{
+				Artists: gazelle.Artists{
+					Tracker: gazelle.Tracker{
+						Name: "tracker",
+					},
+					Artists: map[string][]gazelle.Artist{
+						"Artist": []gazelle.Artist{
+							{1, "artist1"},
+							{2, "artist2"},
+						},
+					},
+				},
+				ID:           3,
+				Name:         "group3",
+				Year:         4321,
+				ReleaseTypeF: 4,
+				Tags:         "tag1,tag2",
+			},
+			ID:                      2,
+			Media:                   "media",
+			Format:                  "format",
+			Encoding:                "encoding",
+			Remastered:              true,
+			RemasterYear:            4321,
+			RemasterTitle:           "title",
+			RemasterCatalogueNumber: &catalogueNumber,
+			Scene:                   true,
+			HasLog:                  true,
+			LogScore:                100,
+			FileCount:               3,
+			Size:                    4,
+			Seeders:                 5,
+			Leechers:                6,
+			Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+		},
+		{
+			Group: gazelle.Group{
+				Artists: gazelle.Artists{
+					Tracker: gazelle.Tracker{
+						Name: "tracker",
+					},
+					Artists: map[string][]gazelle.Artist{
+						"Artist": []gazelle.Artist{
+							{1, "artist1"},
+							{2, "artist2"},
+						},
+					},
+				},
+				ID:           3,
+				Name:         "group3",
+				Year:         4321,
+				ReleaseTypeF: 4,
+				Tags:         "tag1,tag2",
+			},
+			ID:                      3,
+			Media:                   "media",
+			Format:                  "format",
+			Encoding:                "encoding",
+			Remastered:              true,
+			RemasterYear:            4321,
+			RemasterTitle:           "title",
+			RemasterCatalogueNumber: &catalogueNumber,
+			Scene:                   true,
+			HasLog:                  true,
+			LogScore:                100,
+			FileCount:               3,
+			Size:                    4,
+			Seeders:                 5,
+			Leechers:                6,
+			Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+		},
+	}
+	if !reflect.DeepEqual(expected, r) {
 		t.Errorf("expected %v got %v", expected, r)
 	}
 }
