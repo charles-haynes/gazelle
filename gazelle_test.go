@@ -26,7 +26,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"reflect"
 	"runtime"
 	"strings"
@@ -39,24 +38,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db *sqlx.DB
-
-func TestMain(m *testing.M) {
-	var err error
-	db, err = sqlx.Connect("sqlite3", ":memory:")
-	if err == nil {
-		err = LoadTestDB(db)
-	}
-	if err != nil {
-		fmt.Printf("Can't open in memory db: %s", err)
-		os.Exit(-1)
-	}
-	defer db.Close()
-	os.Exit(m.Run())
-}
-
 const (
 	createArtists = `
+DROP TABLE IF EXISTS artists;
 CREATE TABLE artists (
     tracker              TEXT    NOT NULL,
     id                   INTEGER NOT NULL,
@@ -76,6 +60,7 @@ CREATE TABLE artists (
 CREATE INDEX artists_name ON artists(name COLLATE NOCASE);
 `
 	createGroups = `
+DROP TABLE IF EXISTS groups;
 CREATE TABLE groups (
     tracker         TEXT     NOT NULL,
     wikibody        TEXT, --          not in artist, search, top10
@@ -97,6 +82,7 @@ CREATE TABLE groups (
 CREATE INDEX groups_name ON groups(name COLLATE NOCASE);
 `
 	createArtistsGroups = `
+DROP TABLE IF EXISTS artists_groups;
 CREATE TABLE artists_groups (
     tracker  TEXT NOT NULL,
     artistid INTEGER NOT NULL,
@@ -110,6 +96,7 @@ CREATE INDEX artists_groups_artistid ON artists_groups(tracker, artistid);
 CREATE INDEX artists_groups_groupid ON artists_groups(tracker, groupid);
 `
 	createFiles = `
+DROP TABLE IF EXISTS files;
 CREATE TABLE files (
     tracker   STRING  NOT NULL,
     torrentid INT     NOT NULL,
@@ -120,6 +107,7 @@ CREATE TABLE files (
 CREATE UNIQUE INDEX files_torrentid ON files(tracker, torrentid, name);
 `
 	createTorrents = `
+DROP TABLE IF EXISTS torrents;
 CREATE TABLE torrents (
     tracker         TEXT     NOT NULL,
     id              INTEGER  NOT NULL,
@@ -155,10 +143,27 @@ CREATE TABLE torrents (
 CREATE UNIQUE INDEX torrents_hash ON torrents(hash);
 CREATE INDEX torrents_groupid ON torrents(tracker, groupid);
 `
+	createCrosses = `
+DROP TABLE IF EXISTS crosses;
+CREATE TABLE crosses (
+  tracker TEXT NOT NULL,
+  torrentid INT NOT NULL,
+  other TEXT,
+  otherid INT,
+  time DATETIME,
+  PRIMARY KEY(tracker, torrentid),
+  FOREIGN KEY(tracker, torrentid) REFERENCES torrents(tracker, id),
+  FOREIGN KEY(other, otherid) REFERENCES torrents(tracker, id)
+) WITHOUT ROWID;
+`
 )
 
-func LoadTestDB(db *sqlx.DB) error {
-	_, err := db.Exec(`
+func NewTestDB() *sqlx.DB {
+	db, err := sqlx.Connect("sqlite3", ":memory:")
+	if err != nil {
+		panic(err)
+	}
+	_, err = db.Exec(`
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 ` +
@@ -167,12 +172,15 @@ BEGIN TRANSACTION;
 		createFiles +
 		createGroups +
 		createTorrents +
+		createCrosses +
 		`
 COMMIT;
 PRAGMA foreign_keys=ON;
 `)
-	return err
-
+	if err != nil {
+		panic(err)
+	}
+	return db
 }
 
 type MockWhatAPI struct {
@@ -349,12 +357,12 @@ const torrent1JSON = `{"status":"success","response":{"group":{"wikiBody":"wikib
 const torrentdsmJSON = `{"status":"success","response":{"group":{"wikiBody":"blah blah","wikiImage":"https:\/\/ptpimg.me\/yh5fqd.jpg","id":1,"name":"The Dark Side of the Moon","year":1973,"recordLabel":"","catalogueNumber":"","releaseType":1,"categoryId":1,"categoryName":"Music","time":"2019-08-28 17:46:53","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"Pink Floyd"}],"with":[],"conductor":[],"remixedBy":[],"producer":[]},"tags":["rock","experimental","progressive.rock","psychedelic","psychedelic.rock","space.rock","classic.rock","hard.rock","1970s","art.rock","british","staff.recs"]},"torrent":{"id":1,"infoHash":"C380B62A3EC6658597C56F45D596E8081B3F7A5C","media":"CD","format":"FLAC","encoding":"Lossless","remastered":true,"remasterYear":1988,"remasterTitle":"Japan MFSL UltraDisc #1, 24 Karat Gold","remasterRecordLabel":"Mobile Fidelity Sound Lab","remasterCatalogueNumber":"UDCD 517","scene":false,"hasLog":true,"hasCue":true,"logScore":70,"fileCount":12,"size":219114079,"seeders":100,"leechers":0,"snatched":414,"freeTorrent":false,"reported":false,"time":"2016-11-24 01:34:03","description":"[important]Staff: Technically trumped because EAC 0.95 logs are terrible. There is historic and sentimental value in keeping the first torrent ever uploaded to the site as well as a perfect modern rip. Take no action.[\/important]","fileList":"01 - Speak to Me.flac{{{3732587}}}|||02 -  Breathe.flac{{{14244409}}}|||03 - On the Run.flac{{{16541873}}}|||04 - Time.flac{{{35907465}}}|||05 -  The Great Gig in the Sky.flac{{{20671913}}}|||06 - Money.flac{{{37956922}}}|||07 -Us and Them.flac{{{39706774}}}|||08 - Any Colour You Like.flac{{{18736396}}}|||09 - Brain Damage.flac{{{20457034}}}|||10 - Eclipse.flac{{{11153655}}}|||Pink Floyd - Dark Side of the Moon.CUE{{{1435}}}|||Pink Floyd - Dark Side of the Moon.log{{{3616}}}","filePath":"Pink Floyd - Dark Side of the Moon (OMR MFSL 24k Gold Ultradisc II) fixed tags","userId":9,"username":"danger"}}}`
 
 func TestArtistUpdate(t *testing.T) {
+	db := NewTestDB()
 	a := gazelle.Artist{2717, "artist"}
 	tx, err := db.Beginx()
 	if err != nil {
 		t.Error(err)
 	}
-	defer tx.Rollback()
 	tracker := gazelle.Tracker{Name: "tracker"}
 	var ta gazelle.Artist
 	err = tx.Get(&ta, `SELECT name, id FROM artists WHERE id=?`, a.ID)
@@ -399,10 +407,8 @@ func TestArtistsGetArtists(t *testing.T) {
 	expectedArtists := map[string][]gazelle.Artist{
 		"Role": {{1, "artist"}},
 	}
+	db := NewTestDB()
 	_, err := db.Exec(`
-DELETE FROM artists_groups;
-DELETE FROM groups;
-DELETE FROM artists;
 INSERT INTO artists (tracker,id,name) VALUES("tracker",1,"artist");
 INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
 INSERT INTO artists_groups VALUES("tracker",1,2,"Role");
@@ -442,16 +448,8 @@ func TestArtistsDisplayName(t *testing.T) {
 }
 
 func TestArtistsUpdate(t *testing.T) {
+	db := NewTestDB()
 	tx, err := db.Beginx()
-	if err != nil {
-		t.Error(err)
-	}
-	defer tx.Rollback()
-	_, err = tx.Exec(`
-DELETE FROM artists_groups;
-DELETE FROM groups;
-DELETE FROM artists;
-`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -555,11 +553,11 @@ func TestTorrentShortName(t *testing.T) {
 }
 
 func TestTorrentFill_BadTorrentID(t *testing.T) {
+	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
 		t.Error(err)
 	}
-	defer tx.Rollback()
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
@@ -588,11 +586,11 @@ func TestTorrentFill_BadTorrentID(t *testing.T) {
 }
 
 func TestTorrentFill_AlreadyFilled(t *testing.T) {
+	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
 		t.Error(err)
 	}
-	defer tx.Rollback()
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
@@ -624,11 +622,11 @@ func TestTorrentFill_AlreadyFilled(t *testing.T) {
 }
 
 func TestTorrentFill_NeedsFilling(t *testing.T) {
+	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
 		t.Error(err)
 	}
-	defer tx.Rollback()
 	m := MockWhatAPI{
 		JSON:  torrent1JSON,
 		Calls: &[]string{},
@@ -664,16 +662,8 @@ func TestTorrentFill_NeedsFilling(t *testing.T) {
 }
 
 func TestGroupUpdateArtistsGroups_NoArtists(t *testing.T) {
+	db := NewTestDB()
 	tx, err := db.Beginx()
-	if err != nil {
-		t.Error(err)
-	}
-	defer tx.Rollback()
-	_, err = tx.Exec(`
-DELETE FROM artists_groups;
-DELETE FROM groups;
-DELETE FROM artists;
-`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -694,15 +684,12 @@ DELETE FROM artists;
 }
 
 func TestGroupUpdateArtistsGroups(t *testing.T) {
+	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
 		t.Error(err)
 	}
-	defer tx.Rollback()
 	_, err = tx.Exec(`
-DELETE FROM artists_groups;
-DELETE FROM groups;
-DELETE FROM artists;
 INSERT INTO artists (tracker,id,name) VALUES("tracker",1,"artist1");
 INSERT INTO artists (tracker,id,name) VALUES("tracker",2,"artist2");
 INSERT INTO groups VALUES("tracker",NULL,NULL,3,"baz",0,"","","",NULL,NULL,NULL,false,NULL,"");
@@ -755,16 +742,8 @@ func TestBint(t *testing.T) {
 }
 
 func TestGroupUpdate(t *testing.T) {
+	db := NewTestDB()
 	tx, err := db.Beginx()
-	if err != nil {
-		t.Error(err)
-	}
-	defer tx.Rollback()
-	_, err = tx.Exec(`
-DELETE FROM artists_groups;
-DELETE FROM groups;
-DELETE FROM artists;
-`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -965,17 +944,12 @@ func TestNewGroupStruct(t *testing.T) {
 }
 
 func TestUpdateFiles(t *testing.T) {
+	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
 		t.Error(err)
 	}
-	defer tx.Rollback()
 	_, err = tx.Exec(`
-DELETE FROM artists_groups;
-DELETE FROM artists;
-DELETE FROM groups;
-DELETE FROM torrents;
-DELETE FROM files;
 INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
 INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
 `)
@@ -1017,18 +991,8 @@ INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,
 }
 
 func TestTorrentUpdate(t *testing.T) {
+	db := NewTestDB()
 	tx, err := db.Beginx()
-	if err != nil {
-		t.Error(err)
-	}
-	defer tx.Rollback()
-	_, err = tx.Exec(`
-DELETE FROM artists_groups;
-DELETE FROM artists;
-DELETE FROM groups;
-DELETE FROM torrents;
-DELETE FROM files;
-`)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1144,13 +1108,13 @@ DELETE FROM files;
 }
 
 func TestTorrentGetFiles_AlreadyFilled(t *testing.T) {
+	db := NewTestDB()
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
 	_, err := db.Exec(`
-DELETE FROM files;
-DELETE FROM torrents;
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
 INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,1,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
 INSERT INTO files VALUES("tracker", 1, "dbfilename", 2);
 `)
@@ -1181,13 +1145,13 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 2);
 }
 
 func TestTorrentGetFiles_FromDB(t *testing.T) {
+	db := NewTestDB()
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
 	_, err := db.Exec(`
-DELETE FROM files;
-DELETE FROM torrents;
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
 INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,1,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
 INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 `)
@@ -1217,13 +1181,13 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 }
 
 func TestTorrentGetFiles_FromAPI(t *testing.T) {
+	db := NewTestDB()
 	m := MockWhatAPI{
 		JSON:  torrent1JSON,
 		Calls: &[]string{},
 	}
 	_, err := db.Exec(`
-DELETE FROM files;
-DELETE FROM torrents;
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
 INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,1,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
 INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 `)
@@ -1984,5 +1948,236 @@ func TestNewArtist(t *testing.T) {
 	}
 	if !reflect.DeepEqual(expected, r) {
 		t.Errorf("expected \n%+v\n got \n%+v", expected, r)
+	}
+}
+
+func TestTorrentUpdateCross_InsertSrcNoDst(t *testing.T) {
+	db := NewTestDB()
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = tx.Exec(`
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
+INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	src := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{Name: "tracker"},
+			},
+		},
+		ID: 1,
+	}
+	dst := gazelle.Torrent{}
+	err = src.UpdateCross(tx, dst)
+	if err != nil {
+		t.Error(err)
+	}
+	type cross struct {
+		Tracker   string
+		TorrentID int
+		Other     *string
+		OtherID   *int
+		Time      *time.Time
+	}
+	var r []cross
+	err = tx.Select(&r, `SELECT * FROM crosses`)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []cross{{"tracker", 1, nil, nil, r[0].Time}}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+	d := time.Now().Sub(*r[0].Time)
+	if d < 0 || d > time.Minute {
+		t.Errorf("expected time within 1 min of now, got %v", *r[0].Time)
+	}
+}
+
+func TestTorrentUpdateCross_DupSrcNoDst(t *testing.T) {
+	db := NewTestDB()
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = tx.Exec(`
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
+INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	src := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{Name: "tracker"},
+			},
+		},
+		ID: 1,
+	}
+	dst := gazelle.Torrent{}
+	err = src.UpdateCross(tx, dst)
+	if err != nil {
+		t.Error(err)
+	}
+	type cross struct {
+		Tracker   string
+		TorrentID int
+		Other     *string
+		OtherID   *int
+		Time      *time.Time
+	}
+	var r []cross
+	err = tx.Select(&r, `SELECT * FROM crosses`)
+	if err != nil {
+		t.Error(err)
+	}
+	time := time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC)
+	expected := []cross{{"tracker", 1, nil, nil, &time}}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+}
+
+func TestTorrentUpdateCross_InsertSrcAndDst(t *testing.T) {
+	db := NewTestDB()
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = tx.Exec(`
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group2",0,"","","",NULL,NULL,NULL,false,NULL,"");
+INSERT INTO torrents VALUES ("tracker",1,2,"hash1","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+INSERT INTO groups VALUES("other",NULL,NULL,3,"group3",0,"","","",NULL,NULL,NULL,false,NULL,"");
+INSERT INTO torrents VALUES ("other",4,3,"hash2","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"4321-05-06 07:08:09",NULL,NULL,NULL,NULL);
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	src := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{Name: "tracker"},
+			},
+		},
+		ID: 1,
+	}
+	dst := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{Name: "other"},
+			},
+		},
+		ID: 4,
+	}
+	err = src.UpdateCross(tx, dst)
+	if err != nil {
+		t.Error(err)
+	}
+	type cross struct {
+		Tracker   string
+		TorrentID int
+		Other     *string
+		OtherID   *int
+		Time      *time.Time
+	}
+	var r []cross
+	err = tx.Select(&r, `SELECT * FROM crosses`)
+	if err != nil {
+		t.Error(err)
+	}
+	tracker := "tracker"
+	one := 1
+	other := "other"
+	four := 4
+	expected := []cross{
+		{"other", 4, &tracker, &one, r[0].Time},
+		{"tracker", 1, &other, &four, r[1].Time},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+	d := time.Now().Sub(*r[0].Time)
+	if d < 0 || d > time.Minute {
+		t.Errorf("expected time within 1 min of now, got %v", *r[0].Time)
+	}
+	d = time.Now().Sub(*r[1].Time)
+	if d < 0 || d > time.Minute {
+		t.Errorf("expected time within 1 min of now, got %v", *r[1].Time)
+	}
+}
+
+func TestTorrentUpdateCross_ReplaceSrcAndDst(t *testing.T) {
+	db := NewTestDB()
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = tx.Exec(`
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
+INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+INSERT INTO groups VALUES("other",NULL,NULL,3,"group3",0,"","","",NULL,NULL,NULL,false,NULL,"");
+INSERT INTO torrents VALUES ("other",4,3,"hash2","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"4321-05-06 07:08:09",NULL,NULL,NULL,NULL);
+INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	src := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{Name: "tracker"},
+			},
+		},
+		ID: 1,
+	}
+	dst := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{Name: "other"},
+			},
+		},
+		ID: 4,
+	}
+	err = src.UpdateCross(tx, dst)
+	if err != nil {
+		t.Error(err)
+	}
+	type cross struct {
+		Tracker   string
+		TorrentID int
+		Other     *string
+		OtherID   *int
+		Time      *time.Time
+	}
+	var r []cross
+	err = tx.Select(&r, `SELECT * FROM crosses`)
+	if err != nil {
+		t.Error(err)
+	}
+	tracker := "tracker"
+	one := 1
+	other := "other"
+	four := 4
+	expected := []cross{
+		{"other", 4, &tracker, &one, r[0].Time},
+		{"tracker", 1, &other, &four, r[1].Time},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+	d := time.Now().Sub(*r[0].Time)
+	if d < 0 || d > time.Minute {
+		t.Errorf("expected time within 1 min of now, got %v", *r[0].Time)
+	}
+	d = time.Now().Sub(*r[1].Time)
+	if d < 0 || d > time.Minute {
+		t.Errorf("expected time within 1 min of now, got %v", *r[1].Time)
 	}
 }
