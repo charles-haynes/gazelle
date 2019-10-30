@@ -595,7 +595,6 @@ func TestTorrentFill_AlreadyFilled(t *testing.T) {
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
-	s := "file/path"
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
@@ -607,7 +606,7 @@ func TestTorrentFill_AlreadyFilled(t *testing.T) {
 		},
 		ID:       1,
 		Files:    []whatapi.FileStruct{},
-		FilePath: &s,
+		FilePath: addrOf("file/path"),
 	}
 	err = to.Fill(tx)
 	if err != nil {
@@ -900,14 +899,7 @@ func TestNewGroupStruct(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	recordLabel := "recordlabel"
-	catalogNumber := "cataloguenumber"
-	categoryID := int64(3)
-	categoryName := "categoryname"
-	wikiImage := "wikiimage"
 	time := time.Date(1234, time.May, 6, 7, 8, 9, 0, time.UTC)
-	wikiBody := "wikibody"
-	isBookmarked := true
 	expected := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: gazelle.Tracker{
@@ -926,16 +918,16 @@ func TestNewGroupStruct(t *testing.T) {
 		ID:              1,
 		Name:            "name",
 		Year:            2,
-		RecordLabel:     &recordLabel,
-		CatalogueNumber: &catalogNumber,
+		RecordLabel:     addrOf("recordlabel"),
+		CatalogueNumber: addrOf("cataloguenumber"),
 		ReleaseTypeF:    int64(7),
-		CategoryID:      &categoryID,
-		CategoryName:    &categoryName,
+		CategoryID:      addrOfInt64(3),
+		CategoryName:    addrOf("categoryname"),
 		Time:            &time,
 		VanityHouse:     true,
-		WikiImage:       &wikiImage,
-		WikiBody:        &wikiBody,
-		IsBookmarked:    &isBookmarked,
+		WikiImage:       addrOf("wikiimage"),
+		WikiBody:        addrOf("wikibody"),
+		IsBookmarked:    addrOfBool(true),
 		Tags:            "tag1,tag2",
 	}
 	if err := GroupsEqual(expected, r); err != nil {
@@ -996,7 +988,6 @@ func TestTorrentUpdate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	hash := "hash"
 	time := time.Date(1234, time.May, 6, 7, 8, 9, 0, time.UTC)
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
@@ -1006,7 +997,7 @@ func TestTorrentUpdate(t *testing.T) {
 			ID: 2,
 		},
 		ID:                      1,
-		Hash:                    &hash,
+		Hash:                    addrOf("hash"),
 		Media:                   "media",
 		Format:                  "format",
 		Encoding:                "encoding",
@@ -1217,7 +1208,6 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 }
 
 func TestTorrentString_NotRemastered(t *testing.T) {
-	remasterCatalogueNumber := "remastercataloguenumber"
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
@@ -1243,7 +1233,7 @@ func TestTorrentString_NotRemastered(t *testing.T) {
 		RemasterYear:            4321,
 		RemasterTitle:           "remastertitle",
 		RemasterRecordLabel:     "remasterlabel",
-		RemasterCatalogueNumber: &remasterCatalogueNumber,
+		RemasterCatalogueNumber: addrOf("remastercataloguenumber"),
 	}
 	r := to.String()
 	expected := "tracker-1: artist - group (1234) [media format encoding] [releasetype1]"
@@ -1253,7 +1243,6 @@ func TestTorrentString_NotRemastered(t *testing.T) {
 }
 
 func TestTorrentString_Remastered(t *testing.T) {
-	remasterCatalogueNumber := "remastercataloguenumber"
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
@@ -1280,7 +1269,7 @@ func TestTorrentString_Remastered(t *testing.T) {
 		RemasterYear:            4321,
 		RemasterTitle:           "remastertitle",
 		RemasterRecordLabel:     "remasterlabel",
-		RemasterCatalogueNumber: &remasterCatalogueNumber,
+		RemasterCatalogueNumber: addrOf("remastercataloguenumber"),
 	}
 	r := to.String()
 	expected := "tracker-1: artist - group (1234) [media format encoding]{(4321) remasterlabel/remastercataloguenumber/remastertitle} [releasetype1]"
@@ -1394,9 +1383,8 @@ func TestNewSearchTorrentStruct_EmptySearchTorrentStruct(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	catalogueNumber := ""
 	expected := gazelle.Torrent{
-		RemasterCatalogueNumber: &catalogueNumber,
+		RemasterCatalogueNumber: addrOf(""),
 		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
 	}
 	if !reflect.DeepEqual(expected, r) {
@@ -1431,7 +1419,6 @@ func TestNewSearchTorrentStruct(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	catalogueNumber := "cataloguenumber"
 	expected := gazelle.Torrent{
 		Group: gazelle.Group{
 			ID: 1,
@@ -1443,7 +1430,7 @@ func TestNewSearchTorrentStruct(t *testing.T) {
 		Remastered:              true,
 		RemasterYear:            4321,
 		RemasterTitle:           "title",
-		RemasterCatalogueNumber: &catalogueNumber,
+		RemasterCatalogueNumber: addrOf("cataloguenumber"),
 		Scene:                   true,
 		HasLog:                  true,
 		LogScore:                100,
@@ -1537,7 +1524,6 @@ func TestNewTorrentSearch(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	catalogueNumber := "cataloguenumber"
 	expected := []gazelle.Torrent{
 		{
 			Group: gazelle.Group{
@@ -1565,7 +1551,7 @@ func TestNewTorrentSearch(t *testing.T) {
 			Remastered:              true,
 			RemasterYear:            4321,
 			RemasterTitle:           "title",
-			RemasterCatalogueNumber: &catalogueNumber,
+			RemasterCatalogueNumber: addrOf("cataloguenumber"),
 			Scene:                   true,
 			HasLog:                  true,
 			LogScore:                100,
@@ -1601,7 +1587,7 @@ func TestNewTorrentSearch(t *testing.T) {
 			Remastered:              true,
 			RemasterYear:            4321,
 			RemasterTitle:           "title",
-			RemasterCatalogueNumber: &catalogueNumber,
+			RemasterCatalogueNumber: addrOf("cataloguenumber"),
 			Scene:                   true,
 			HasLog:                  true,
 			LogScore:                100,
@@ -1805,16 +1791,13 @@ func TestNewArtist(t *testing.T) {
 			"With":   {{33, "artist33"}},
 		},
 	}
-	recordLabel2 := "recordlabel2"
-	catalogueNumber2 := "catalogue2"
-	isBookmarked2 := true
 	group2 := gazelle.Group{
 		Artists:         artists2,
 		ID:              2,
 		Name:            "group2",
 		Year:            4321,
-		RecordLabel:     &recordLabel2,
-		CatalogueNumber: &catalogueNumber2,
+		RecordLabel:     addrOf("recordlabel2"),
+		CatalogueNumber: addrOf("catalogue2"),
 		ReleaseTypeF:    2,
 		CategoryID:      nil,
 		CategoryName:    nil,
@@ -1822,19 +1805,16 @@ func TestNewArtist(t *testing.T) {
 		VanityHouse:     true,
 		WikiImage:       nil,
 		WikiBody:        nil,
-		IsBookmarked:    &isBookmarked2,
+		IsBookmarked:    addrOfBool(true),
 		Tags:            "tags21,tags22",
 	}
-	recordLabel3 := "recordlabel3"
-	catalogueNumber3 := "catalogue3"
-	isBookmarked3 := false
 	group3 := gazelle.Group{
 		Artists:         artists3,
 		ID:              3,
 		Name:            "group3",
 		Year:            5432,
-		RecordLabel:     &recordLabel3,
-		CatalogueNumber: &catalogueNumber3,
+		RecordLabel:     addrOf("recordlabel3"),
+		CatalogueNumber: addrOf("catalogue3"),
 		ReleaseTypeF:    3,
 		CategoryID:      nil,
 		CategoryName:    nil,
@@ -1842,7 +1822,7 @@ func TestNewArtist(t *testing.T) {
 		VanityHouse:     false,
 		WikiImage:       nil,
 		WikiBody:        nil,
-		IsBookmarked:    &isBookmarked3,
+		IsBookmarked:    addrOfBool(false),
 		Tags:            "tags31,tags32",
 	}
 	expected := []gazelle.Torrent{
@@ -2092,13 +2072,9 @@ INSERT INTO torrents VALUES ("other",4,3,"hash2","","","",false,0,"","",NULL,fal
 	if err != nil {
 		t.Error(err)
 	}
-	tracker := "tracker"
-	one := 1
-	other := "other"
-	four := 4
 	expected := []cross{
-		{"other", 4, &tracker, &one, r[0].Time},
-		{"tracker", 1, &other, &four, r[1].Time},
+		{"other", 4, addrOf("tracker"), addrOfInt(1), r[0].Time},
+		{"tracker", 1, addrOf("other"), addrOfInt(4), r[1].Time},
 	}
 	if !reflect.DeepEqual(expected, r) {
 		t.Errorf("expected %v got %v", expected, r)
@@ -2161,13 +2137,9 @@ INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
 	if err != nil {
 		t.Error(err)
 	}
-	tracker := "tracker"
-	one := 1
-	other := "other"
-	four := 4
 	expected := []cross{
-		{"other", 4, &tracker, &one, r[0].Time},
-		{"tracker", 1, &other, &four, r[1].Time},
+		{"other", 4, addrOf("tracker"), addrOfInt(1), r[0].Time},
+		{"tracker", 1, addrOf("other"), addrOfInt(4), r[1].Time},
 	}
 	if !reflect.DeepEqual(expected, r) {
 		t.Errorf("expected %v got %v", expected, r)
@@ -2179,5 +2151,37 @@ INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
 	d = time.Now().Sub(*r[1].Time)
 	if d < 0 || d > time.Minute {
 		t.Errorf("expected time within 1 min of now, got %v", *r[1].Time)
+	}
+}
+
+func addrOf(s string) *string    { return &s }
+func addrOfBool(b bool) *bool    { return &b }
+func addrOfInt(i int) *int       { return &i }
+func addrOfInt64(i int64) *int64 { return &i }
+
+func TestNewTorrentStruct_Empty(t *testing.T) {
+	g := gazelle.Group{}
+	ts := whatapi.TorrentStruct{
+		Time: "1234-05-06 07:08:09",
+	}
+	r, err := gazelle.NewTorrentStruct(g, ts)
+	if err != nil {
+		t.Error(err)
+	}
+	files := []whatapi.FileStruct{}
+	expected := gazelle.Torrent{
+		Group:                   g,
+		Hash:                    addrOf(""),
+		RemasterCatalogueNumber: addrOf(""),
+		Reported:                addrOfBool(false),
+		Description:             addrOf(""),
+		FilePath:                addrOf(""),
+		UserID:                  addrOfInt(0),
+		Username:                addrOf(""),
+		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+		Files:                   files,
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
 	}
 }
