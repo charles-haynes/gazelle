@@ -644,19 +644,25 @@ func NewTorrentSearch(
 }
 
 func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error) {
-	for _, ag := range a.TorrentGroup {
+	torrents = []Torrent{}
+	for i, ag := range a.TorrentGroup {
 		al := NewExtendedArtistMap(tracker, ag.ExtendedArtists)
 		g := Group{
-			Artists: al,
-			ID:      int64(ag.GroupID),
-			Name:    ag.GroupName(),
-			Year:    int64(ag.Year()),
-			// RecordLabel:     "",
-			// CatalogueNumber: nil,
-			ReleaseTypeF: int64(ag.ReleaseTypeF),
+			Artists:         al,
+			ID:              int64(ag.GroupID),
+			Name:            ag.GroupName(),
+			Year:            int64(ag.Year()),
+			RecordLabel:     &a.TorrentGroup[i].GroupRecordLabelF,
+			CatalogueNumber: &a.TorrentGroup[i].GroupCatalogueNumberF,
+			ReleaseTypeF:    int64(ag.ReleaseTypeF),
+			// CategoryID
+			// CategoryName
+			// Time
+			VanityHouse: ag.GroupVanityHouse,
 			// WikiImage:       nil,
 			// WikiBody:        nil,
-			Tags: strings.Join(ag.Tags(), ","),
+			IsBookmarked: &a.TorrentGroup[i].HasBookmarked,
+			Tags:         strings.Join(ag.Tags(), ","),
 		}
 		for _, rt := range ag.Torrent {
 			if rt.GroupIDF != ag.GroupID {
@@ -681,16 +687,16 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 				RemasterTitle:       rt.RemasterTitle(),
 				RemasterRecordLabel: rt.RemasterRecordLabel(),
 				// RemasterCatalogueNumber: nil,
-				Scene:     rt.Scene(),
-				HasLog:    rt.HasLog(),
-				HasCue:    rt.HasCue,
-				LogScore:  int64(rt.LogScore),
-				FileCount: int64(rt.FileCount()),
-				Size:      rt.Size,
-				Seeders:   int64(rt.Seeders),
-				Leechers:  int64(rt.Leechers),
-				Snatched:  int64(rt.Snatched),
-				// FreeTorrent: false,
+				Scene:       rt.Scene(),
+				HasLog:      rt.HasLog(),
+				HasCue:      rt.HasCue,
+				LogScore:    int64(rt.LogScore),
+				FileCount:   int64(rt.FileCount()),
+				Size:        rt.Size,
+				Seeders:     int64(rt.Seeders),
+				Leechers:    int64(rt.Leechers),
+				Snatched:    int64(rt.Snatched),
+				FreeTorrent: rt.FreeTorrent,
 				// Reported:    nil,
 				Time: tTime,
 				// Description: nil,

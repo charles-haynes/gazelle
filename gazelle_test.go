@@ -1652,3 +1652,337 @@ func TestNewTorrentSearch(t *testing.T) {
 		t.Errorf("expected %v got %v", expected, r)
 	}
 }
+
+func TestNewArtist_Empty(t *testing.T) {
+	tracker := gazelle.Tracker{}
+	a := whatapi.Artist{}
+	r, err := gazelle.NewArtist(tracker, a)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []gazelle.Torrent{}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %#v got %#v", expected, r)
+	}
+}
+
+func TestNewArtist(t *testing.T) {
+	tracker := gazelle.Tracker{
+		ReleaseTypes: map[int64]string{
+			2: "releasetype2",
+			3: "releasetype3",
+		},
+	}
+	a := whatapi.Artist{
+		ID:    1,
+		NameF: "artist",
+		TorrentGroup: []whatapi.ArtistGroupStruct{
+			{
+				GroupID:               2,
+				GroupYearF:            4321,
+				GroupRecordLabelF:     "recordlabel2",
+				GroupCatalogueNumberF: "catalogue2",
+				TagsF:                 []string{"tags21", "tags22"},
+				ReleaseTypeF:          2,
+				GroupVanityHouse:      true,
+				HasBookmarked:         true,
+				Torrent: []whatapi.ArtistTorrentStruct{
+					{
+						IDF:                  21,
+						GroupIDF:             2,
+						MediaF:               "media21",
+						FormatF:              "format21",
+						EncodingF:            "encoding21",
+						RemasterYearF:        2101,
+						RemasteredF:          true,
+						RemasterTitleF:       "title21",
+						RemasterRecordLabelF: "recordlabel21",
+						SceneF:               true,
+						HasLogF:              false,
+						HasCue:               true,
+						LogScore:             21,
+						FileCountF:           215,
+						FreeTorrent:          false,
+						Size:                 216,
+						Leechers:             217,
+						Seeders:              218,
+						Snatched:             219,
+						Time:                 "2102-05-06 07:08:09",
+						HasFile:              2110,
+					},
+					{
+						IDF:                  22,
+						GroupIDF:             2,
+						MediaF:               "media22",
+						FormatF:              "format22",
+						EncodingF:            "encoding22",
+						RemasterYearF:        2201,
+						RemasteredF:          true,
+						RemasterTitleF:       "title22",
+						RemasterRecordLabelF: "recordlabel22",
+						SceneF:               false,
+						HasLogF:              true,
+						HasCue:               true,
+						LogScore:             22,
+						FileCountF:           225,
+						FreeTorrent:          false,
+						Size:                 226,
+						Leechers:             227,
+						Seeders:              228,
+						Snatched:             229,
+						Time:                 "2202-05-06 07:08:09",
+						HasFile:              2210,
+					},
+				},
+				GroupNameF: "group2",
+				ArtistsF: []whatapi.ArtistAlias{
+					{21, "artist21", 211},
+					{22, "artist22", 222},
+				},
+				ExtendedArtists: whatapi.ExtendedArtistMap{
+					"Artist": []whatapi.ArtistAlias{
+						{21, "artist21", 211},
+						{22, "artist22", 222},
+					},
+					"With": []whatapi.ArtistAlias{
+						{23, "artist23", 233},
+					},
+				},
+			},
+			{
+				GroupID:               3,
+				GroupYearF:            5432,
+				GroupRecordLabelF:     "recordlabel3",
+				GroupCatalogueNumberF: "catalogue3",
+				TagsF:                 []string{"tags31", "tags32"},
+				ReleaseTypeF:          3,
+				GroupVanityHouse:      false,
+				HasBookmarked:         false,
+				Torrent: []whatapi.ArtistTorrentStruct{
+					{
+						IDF:                  31,
+						GroupIDF:             3,
+						MediaF:               "media31",
+						FormatF:              "format31",
+						EncodingF:            "encoding31",
+						RemasterYearF:        3101,
+						RemasteredF:          true,
+						RemasterTitleF:       "title31",
+						RemasterRecordLabelF: "recordlabel31",
+						SceneF:               true,
+						HasLogF:              false,
+						HasCue:               false,
+						LogScore:             31,
+						FileCountF:           315,
+						FreeTorrent:          false,
+						Size:                 316,
+						Leechers:             317,
+						Seeders:              318,
+						Snatched:             319,
+						Time:                 "3102-05-06 07:08:09",
+						HasFile:              3110,
+					},
+					{
+						IDF:                  32,
+						GroupIDF:             3,
+						MediaF:               "media32",
+						FormatF:              "format32",
+						EncodingF:            "encoding32",
+						RemasterYearF:        3201,
+						RemasteredF:          true,
+						RemasterTitleF:       "title32",
+						RemasterRecordLabelF: "recordlabel32",
+						SceneF:               false,
+						HasLogF:              true,
+						HasCue:               true,
+						LogScore:             32,
+						FileCountF:           325,
+						FreeTorrent:          true,
+						Size:                 326,
+						Leechers:             327,
+						Seeders:              328,
+						Snatched:             329,
+						Time:                 "3202-05-06 07:08:09",
+						HasFile:              3210,
+					},
+				},
+				GroupNameF: "group3",
+				ArtistsF: []whatapi.ArtistAlias{
+					{31, "artist31", 311},
+					{32, "artist32", 322},
+				},
+				ExtendedArtists: whatapi.ExtendedArtistMap{
+					"Artist": []whatapi.ArtistAlias{
+						{31, "artist31", 311},
+						{32, "artist32", 322},
+					},
+					"With": []whatapi.ArtistAlias{
+						{33, "artist33", 333},
+					},
+				},
+			},
+		},
+	}
+	r, err := gazelle.NewArtist(tracker, a)
+	if err != nil {
+		t.Error(err)
+	}
+	artists2 := gazelle.Artists{
+		Tracker: tracker,
+		Artists: map[string][]gazelle.Artist{
+			"Artist": {{21, "artist21"}, {22, "artist22"}},
+			"With":   {{23, "artist23"}},
+		},
+	}
+	artists3 := gazelle.Artists{
+		Tracker: tracker,
+		Artists: map[string][]gazelle.Artist{
+			"Artist": {{31, "artist31"}, {32, "artist32"}},
+			"With":   {{33, "artist33"}},
+		},
+	}
+	recordLabel2 := "recordlabel2"
+	catalogueNumber2 := "catalogue2"
+	isBookmarked2 := true
+	group2 := gazelle.Group{
+		Artists:         artists2,
+		ID:              2,
+		Name:            "group2",
+		Year:            4321,
+		RecordLabel:     &recordLabel2,
+		CatalogueNumber: &catalogueNumber2,
+		ReleaseTypeF:    2,
+		CategoryID:      nil,
+		CategoryName:    nil,
+		Time:            nil,
+		VanityHouse:     true,
+		WikiImage:       nil,
+		WikiBody:        nil,
+		IsBookmarked:    &isBookmarked2,
+		Tags:            "tags21,tags22",
+	}
+	recordLabel3 := "recordlabel3"
+	catalogueNumber3 := "catalogue3"
+	isBookmarked3 := false
+	group3 := gazelle.Group{
+		Artists:         artists3,
+		ID:              3,
+		Name:            "group3",
+		Year:            5432,
+		RecordLabel:     &recordLabel3,
+		CatalogueNumber: &catalogueNumber3,
+		ReleaseTypeF:    3,
+		CategoryID:      nil,
+		CategoryName:    nil,
+		Time:            nil,
+		VanityHouse:     false,
+		WikiImage:       nil,
+		WikiBody:        nil,
+		IsBookmarked:    &isBookmarked3,
+		Tags:            "tags31,tags32",
+	}
+	expected := []gazelle.Torrent{
+		{
+			Group:               group2,
+			ID:                  21,
+			Media:               "media21",
+			Format:              "format21",
+			Encoding:            "encoding21",
+			Remastered:          true,
+			RemasterYear:        2101,
+			RemasterTitle:       "title21",
+			RemasterRecordLabel: "recordlabel21",
+			Scene:               true,
+			HasLog:              false,
+			HasCue:              true,
+			LogScore:            21,
+			FileCount:           215,
+			Size:                216,
+			Seeders:             218,
+			Leechers:            217,
+			Snatched:            219,
+			FreeTorrent:         false,
+			Time:                time.Date(2102, 5, 6, 7, 8, 9, 0, time.UTC),
+		},
+		{
+			Group:               group2,
+			ID:                  22,
+			Media:               "media22",
+			Format:              "format22",
+			Encoding:            "encoding22",
+			Remastered:          true,
+			RemasterYear:        2201,
+			RemasterTitle:       "title22",
+			RemasterRecordLabel: "recordlabel22",
+			Scene:               false,
+			HasLog:              true,
+			HasCue:              true,
+			LogScore:            22,
+			FileCount:           225,
+			Size:                226,
+			Seeders:             228,
+			Leechers:            227,
+			Snatched:            229,
+			FreeTorrent:         false,
+			Time:                time.Date(2202, 5, 6, 7, 8, 9, 0, time.UTC),
+		},
+		{
+			Group:               group3,
+			ID:                  31,
+			Media:               "media31",
+			Format:              "format31",
+			Encoding:            "encoding31",
+			Remastered:          true,
+			RemasterYear:        3101,
+			RemasterTitle:       "title31",
+			RemasterRecordLabel: "recordlabel31",
+			Scene:               true,
+			HasLog:              false,
+			HasCue:              false,
+			LogScore:            31,
+			FileCount:           315,
+			Size:                316,
+			Seeders:             318,
+			Leechers:            317,
+			Snatched:            319,
+			FreeTorrent:         false,
+			Time:                time.Date(3102, 5, 6, 7, 8, 9, 0, time.UTC),
+		},
+		{
+			Group:               group3,
+			ID:                  32,
+			Media:               "media32",
+			Format:              "format32",
+			Encoding:            "encoding32",
+			Remastered:          true,
+			RemasterYear:        3201,
+			RemasterTitle:       "title32",
+			RemasterRecordLabel: "recordlabel32",
+			Scene:               false,
+			HasLog:              true,
+			HasCue:              true,
+			LogScore:            32,
+			FileCount:           325,
+			Size:                326,
+			Seeders:             328,
+			Leechers:            327,
+			Snatched:            329,
+			FreeTorrent:         true,
+			Time:                time.Date(3202, 5, 6, 7, 8, 9, 0, time.UTC),
+		},
+	}
+	for i := range r {
+		if !reflect.DeepEqual(expected[i].RecordLabel, r[i].RecordLabel) {
+			fmt.Printf("RecordLabel %d: %v != %v\n", i, *expected[i].RecordLabel, *r[i].RecordLabel)
+		}
+		if !reflect.DeepEqual(expected[i].CatalogueNumber, r[i].CatalogueNumber) {
+			fmt.Printf("CatalogueNumber: %d: %v != %v\n", i, *expected[i].CatalogueNumber, *r[i].CatalogueNumber)
+		}
+		if !reflect.DeepEqual(expected[i].IsBookmarked, r[i].IsBookmarked) {
+			fmt.Printf("IsBookmarked %d: %v != %v\n", i, *expected[i].IsBookmarked, *r[i].IsBookmarked)
+		}
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected \n%+v\n got \n%+v", expected, r)
+	}
+}
