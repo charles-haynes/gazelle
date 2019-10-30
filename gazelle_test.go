@@ -2185,3 +2185,78 @@ func TestNewTorrentStruct_Empty(t *testing.T) {
 		t.Errorf("expected %v got %v", expected, r)
 	}
 }
+
+func TestNewTorrentStruct(t *testing.T) {
+	g := gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: gazelle.Tracker{Name: "tracker"},
+		},
+		ID: 2,
+	}
+	ts := whatapi.TorrentStruct{
+		IDF:                      1,
+		InfoHash:                 "hash",
+		MediaF:                   "media",
+		FormatF:                  "format",
+		EncodingF:                "encoding",
+		RemasteredF:              true,
+		RemasterYearF:            4321,
+		RemasterTitleF:           "title",
+		RemasterRecordLabelF:     "label",
+		RemasterCatalogueNumberF: "catalogue",
+		SceneF:                   false,
+		HasLogF:                  true,
+		HasCue:                   false,
+		LogScore:                 100,
+		FileCountF:               2,
+		Size:                     3,
+		Seeders:                  4,
+		Leechers:                 5,
+		Snatched:                 6,
+		FreeTorrent:              true,
+		Reported:                 false,
+		Time:                     "1234-05-06 07:08:09",
+		DescriptionF:             "description",
+		FileList:                 "apifile1{{{1}}}|||apifile2{{{2}}}",
+		FilePathF:                "file/path",
+		UserID:                   7,
+		Username:                 "username",
+	}
+	r, err := gazelle.NewTorrentStruct(g, ts)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := gazelle.Torrent{
+		Group:                   g,
+		ID:                      1,
+		Hash:                    addrOf("hash"),
+		Media:                   "media",
+		Format:                  "format",
+		Encoding:                "encoding",
+		Remastered:              true,
+		RemasterYear:            4321,
+		RemasterTitle:           "title",
+		RemasterRecordLabel:     "label",
+		RemasterCatalogueNumber: addrOf("catalogue"),
+		Scene:                   false,
+		HasLog:                  true,
+		HasCue:                  false,
+		LogScore:                100,
+		FileCount:               2,
+		Size:                    3,
+		Seeders:                 4,
+		Leechers:                5,
+		Snatched:                6,
+		FreeTorrent:             true,
+		Reported:                addrOfBool(false),
+		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+		Description:             addrOf("description"),
+		FilePath:                addrOf("file/path"),
+		UserID:                  addrOfInt(7),
+		Username:                addrOf("username"),
+		Files:                   []whatapi.FileStruct{{"apifile1", 1}, {"apifile2", 2}},
+	}
+	if !reflect.DeepEqual(expected, r) {
+		t.Errorf("expected %v got %v", expected, r)
+	}
+}
