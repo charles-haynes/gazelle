@@ -866,7 +866,7 @@ func (t Tracker) Search(params url.Values) ([]Torrent, error) {
 func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, error) {
 	res := map[int]Torrent{}
 	for _, t := range tt {
-		for _, r := range t.Results {
+		for i, r := range t.Results {
 			if _, ok := res[r.TorrentID]; ok {
 				continue
 			}
@@ -884,7 +884,7 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 				CategoryID: &groupCategory,
 				Year:       int64(r.GroupYear),
 				Tags:       strings.Join(r.Tags, ","),
-				WikiImage:  &r.WikiImage,
+				WikiImage:  &t.Results[i].WikiImage,
 			}
 			logScore, err := strconv.Atoi(r.LogScore)
 			if err != nil {
