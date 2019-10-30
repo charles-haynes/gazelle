@@ -619,7 +619,6 @@ func NewSearchTorrentStruct(g Group, rt whatapi.SearchTorrentStruct) (Torrent, e
 		// UserID:                  nil,
 		// Username:                nil,
 		// Files:                   nil,
-		// Logs:                    nil,
 	}, nil
 }
 
@@ -703,7 +702,6 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 				// UserID:      nil,
 				// Username:    nil,
 				// Files:       nil,
-				// Logs:        nil,
 			})
 		}
 	}
@@ -771,7 +769,7 @@ func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
 		UserID:                  &t.UserID,
 		Username:                &t.Username,
 		Files:                   files,
-		// Logs: ...
+		// LogChecksum
 	}, nil
 }
 
@@ -920,7 +918,6 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 				// UserID
 				// UserName
 				// Files
-				// Logs
 				// r.Data
 				// r.ReleaseType,
 			}
