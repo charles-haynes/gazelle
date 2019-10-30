@@ -868,9 +868,102 @@ func GroupsEqual(g1, g2 gazelle.Group) error {
 	return fmt.Errorf("unknown, did you leave out a field in GroupEqual?")
 }
 
-func TestNewGroupStruct(t *testing.T) {
-	tracker := gazelle.Tracker{Name: "tracker"}
-	gs := whatapi.GroupStruct{
+func TorrentsEqual(t1, t2 gazelle.Torrent) error {
+	if reflect.DeepEqual(t1, t2) {
+		return nil
+	}
+	if err := GroupsEqual(t1.Group, t2.Group); err != nil {
+		return fmt.Errorf("Group.%s", err)
+	}
+	if !reflect.DeepEqual(t1.ID, t2.ID) {
+		return fmt.Errorf("ID")
+	}
+	if !reflect.DeepEqual(t1.Hash, t2.Hash) {
+		return fmt.Errorf("Hash")
+	}
+	if !reflect.DeepEqual(t1.Media, t2.Media) {
+		return fmt.Errorf("Media")
+	}
+	if !reflect.DeepEqual(t1.Format, t2.Format) {
+		return fmt.Errorf("Format")
+	}
+	if !reflect.DeepEqual(t1.Encoding, t2.Encoding) {
+		return fmt.Errorf("Encoding")
+	}
+	if !reflect.DeepEqual(t1.Remastered, t2.Remastered) {
+		return fmt.Errorf("Remastered")
+	}
+	if !reflect.DeepEqual(t1.RemasterYear, t2.RemasterYear) {
+		return fmt.Errorf("RemasterYear")
+	}
+	if !reflect.DeepEqual(t1.RemasterTitle, t2.RemasterTitle) {
+		return fmt.Errorf("RemasterTitle")
+	}
+	if !reflect.DeepEqual(t1.RemasterRecordLabel, t2.RemasterRecordLabel) {
+		return fmt.Errorf("RemasterRecordLabel")
+	}
+	if !reflect.DeepEqual(t1.RemasterCatalogueNumber, t2.RemasterCatalogueNumber) {
+		return fmt.Errorf("RemasterCatalogueNumber")
+	}
+	if !reflect.DeepEqual(t1.Scene, t2.Scene) {
+		return fmt.Errorf("Scene")
+	}
+	if !reflect.DeepEqual(t1.HasLog, t2.HasLog) {
+		return fmt.Errorf("HasLog")
+	}
+	if !reflect.DeepEqual(t1.HasCue, t2.HasCue) {
+		return fmt.Errorf("HasCue")
+	}
+	if !reflect.DeepEqual(t1.LogScore, t2.LogScore) {
+		return fmt.Errorf("LogScore")
+	}
+	if !reflect.DeepEqual(t1.LogChecksum, t2.LogChecksum) {
+		return fmt.Errorf("LogChecksum")
+	}
+	if !reflect.DeepEqual(t1.FileCount, t2.FileCount) {
+		return fmt.Errorf("FileCount")
+	}
+	if !reflect.DeepEqual(t1.Size, t2.Size) {
+		return fmt.Errorf("Size")
+	}
+	if !reflect.DeepEqual(t1.Seeders, t2.Seeders) {
+		return fmt.Errorf("Seeders")
+	}
+	if !reflect.DeepEqual(t1.Leechers, t2.Leechers) {
+		return fmt.Errorf("Leechers")
+	}
+	if !reflect.DeepEqual(t1.Snatched, t2.Snatched) {
+		return fmt.Errorf("Snatched")
+	}
+	if !reflect.DeepEqual(t1.FreeTorrent, t2.FreeTorrent) {
+		return fmt.Errorf("FreeTorrent")
+	}
+	if !reflect.DeepEqual(t1.Reported, t2.Reported) {
+		return fmt.Errorf("Reported")
+	}
+	if !reflect.DeepEqual(t1.Time, t2.Time) {
+		return fmt.Errorf("Time")
+	}
+	if !reflect.DeepEqual(t1.Description, t2.Description) {
+		return fmt.Errorf("Description")
+	}
+	if !reflect.DeepEqual(t1.FilePath, t2.FilePath) {
+		return fmt.Errorf("FilePath")
+	}
+	if !reflect.DeepEqual(t1.UserID, t2.UserID) {
+		return fmt.Errorf("UserID")
+	}
+	if !reflect.DeepEqual(t1.Username, t2.Username) {
+		return fmt.Errorf("Username")
+	}
+	if !reflect.DeepEqual(t1.Files, t2.Files) {
+		return fmt.Errorf("Files")
+	}
+	return fmt.Errorf("unknown, did you leave out a field in GroupEqual?")
+}
+
+var (
+	groupStruct = whatapi.GroupStruct{
 		WikiImageF:       "wikiimage",
 		WikiBodyF:        "wikibody",
 		IDF:              1,
@@ -895,11 +988,47 @@ func TestNewGroupStruct(t *testing.T) {
 		IsBookmarked: true,
 		TagsF:        []string{"tag1", "tag2"},
 	}
+	gtime       = time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC)
+	expectGroup = gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: gazelle.Tracker{
+				Name: "tracker",
+			},
+			Artists: map[string][]gazelle.Artist{
+				"Artist":    {{4, "artist4"}, {5, "artist5"}},
+				"Composer":  {},
+				"Conductor": {},
+				"DJ":        {},
+				"Producer":  {},
+				"RemixedBy": {},
+				"With":      {{6, "artist6"}},
+			},
+		},
+		ID:              1,
+		Name:            "name",
+		Year:            2,
+		RecordLabel:     addrOf("recordlabel"),
+		CatalogueNumber: addrOf("cataloguenumber"),
+		ReleaseTypeF:    int64(7),
+		CategoryID:      addrOfInt64(3),
+		CategoryName:    addrOf("categoryname"),
+		Time:            &gtime,
+		VanityHouse:     true,
+		WikiImage:       addrOf("wikiimage"),
+		WikiBody:        addrOf("wikibody"),
+		IsBookmarked:    addrOfBool(true),
+		Tags:            "tag1,tag2",
+	}
+)
+
+func TestNewGroupStruct(t *testing.T) {
+	tracker := gazelle.Tracker{Name: "tracker"}
+	gs := groupStruct
 	r, err := gazelle.NewGroupStruct(tracker, gs)
 	if err != nil {
 		t.Error(err)
 	}
-	time := time.Date(1234, time.May, 6, 7, 8, 9, 0, time.UTC)
+	gtime := time.Date(1234, time.May, 6, 7, 8, 9, 0, time.UTC)
 	expected := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: gazelle.Tracker{
@@ -923,7 +1052,7 @@ func TestNewGroupStruct(t *testing.T) {
 		ReleaseTypeF:    int64(7),
 		CategoryID:      addrOfInt64(3),
 		CategoryName:    addrOf("categoryname"),
-		Time:            &time,
+		Time:            &gtime,
 		VanityHouse:     true,
 		WikiImage:       addrOf("wikiimage"),
 		WikiBody:        addrOf("wikibody"),
@@ -1333,8 +1462,8 @@ func TestNewGroupSearchResult_EmptyTorrents(t *testing.T) {
 			Artists: map[string][]gazelle.Artist{"Artist": {}},
 		},
 	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected \n%v\n got \n%v", expected, r)
+	if err := GroupsEqual(expected, r); err != nil {
+		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
 	}
 }
 
@@ -1369,8 +1498,8 @@ func TestNewGroupSearchResult_NonEmptyTorrents(t *testing.T) {
 		ReleaseTypeF: 4,
 		Tags:         "tag1,tag2",
 	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected \n%v\n got \n%v", expected, r)
+	if err := GroupsEqual(expected, r); err != nil {
+		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
 	}
 }
 
@@ -1387,8 +1516,8 @@ func TestNewSearchTorrentStruct_EmptySearchTorrentStruct(t *testing.T) {
 		RemasterCatalogueNumber: addrOf(""),
 		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
 	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected \n%v \ngot \n%v", expected, r)
+	if err := TorrentsEqual(expected, r); err != nil {
+		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
 	}
 }
 
@@ -1440,8 +1569,8 @@ func TestNewSearchTorrentStruct(t *testing.T) {
 		Leechers:                6,
 		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
 	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected \n%v \ngot \n%v", expected, r)
+	if err := TorrentsEqual(expected, r); err != nil {
+		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
 	}
 }
 
@@ -1598,8 +1727,14 @@ func TestNewTorrentSearch(t *testing.T) {
 			Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
 		},
 	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected %v got %v", expected, r)
+	if len(expected) != len(r) {
+		t.Errorf("expected %d torrents, got %d", len(expected), len(r))
+	}
+	for i := range r {
+		if err := TorrentsEqual(expected[i], r[i]); err != nil {
+			t.Errorf("%d: expected %v got %v, differ in %s",
+				i, expected[i], r[i], err)
+		}
 	}
 }
 
@@ -1915,19 +2050,14 @@ func TestNewArtist(t *testing.T) {
 			Time:                time.Date(3202, 5, 6, 7, 8, 9, 0, time.UTC),
 		},
 	}
-	for i := range r {
-		if !reflect.DeepEqual(expected[i].RecordLabel, r[i].RecordLabel) {
-			fmt.Printf("RecordLabel %d: %v != %v\n", i, *expected[i].RecordLabel, *r[i].RecordLabel)
-		}
-		if !reflect.DeepEqual(expected[i].CatalogueNumber, r[i].CatalogueNumber) {
-			fmt.Printf("CatalogueNumber: %d: %v != %v\n", i, *expected[i].CatalogueNumber, *r[i].CatalogueNumber)
-		}
-		if !reflect.DeepEqual(expected[i].IsBookmarked, r[i].IsBookmarked) {
-			fmt.Printf("IsBookmarked %d: %v != %v\n", i, *expected[i].IsBookmarked, *r[i].IsBookmarked)
-		}
+	if len(expected) != len(r) {
+		t.Errorf("expected %d torrents, got %d", len(expected), len(r))
 	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected \n%+v\n got \n%+v", expected, r)
+	for i := range r {
+		if err := TorrentsEqual(expected[i], r[i]); err != nil {
+			t.Errorf("%d: expected %v got %v, differ in %s",
+				i, expected[i], r[i], err)
+		}
 	}
 }
 
@@ -2181,19 +2311,13 @@ func TestNewTorrentStruct_Empty(t *testing.T) {
 		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
 		Files:                   files,
 	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected %v got %v", expected, r)
+	if err := TorrentsEqual(expected, r); err != nil {
+		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
 	}
 }
 
-func TestNewTorrentStruct(t *testing.T) {
-	g := gazelle.Group{
-		Artists: gazelle.Artists{
-			Tracker: gazelle.Tracker{Name: "tracker"},
-		},
-		ID: 2,
-	}
-	ts := whatapi.TorrentStruct{
+var (
+	torrentStruct = whatapi.TorrentStruct{
 		IDF:                      1,
 		InfoHash:                 "hash",
 		MediaF:                   "media",
@@ -2222,12 +2346,7 @@ func TestNewTorrentStruct(t *testing.T) {
 		UserID:                   7,
 		Username:                 "username",
 	}
-	r, err := gazelle.NewTorrentStruct(g, ts)
-	if err != nil {
-		t.Error(err)
-	}
-	expected := gazelle.Torrent{
-		Group:                   g,
+	expectTorrent = gazelle.Torrent{
 		ID:                      1,
 		Hash:                    addrOf("hash"),
 		Media:                   "media",
@@ -2256,7 +2375,94 @@ func TestNewTorrentStruct(t *testing.T) {
 		Username:                addrOf("username"),
 		Files:                   []whatapi.FileStruct{{"apifile1", 1}, {"apifile2", 2}},
 	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected %v got %v", expected, r)
+)
+
+func TestNewTorrentStruct(t *testing.T) {
+	g := gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: gazelle.Tracker{Name: "tracker"},
+		},
+		ID: 2,
+	}
+	ts := torrentStruct
+	r, err := gazelle.NewTorrentStruct(g, ts)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := expectTorrent
+	expected.Group = g
+	if err := TorrentsEqual(expected, r); err != nil {
+		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
+	}
+}
+
+func TestNewGetTorrentStruct_Empty(t *testing.T) {
+	tracker := gazelle.Tracker{Name: "tracker"}
+	tr := whatapi.GetTorrentStruct{
+		Group: whatapi.GroupStruct{
+			Time: "1234-05-06 07:08:09",
+		},
+		Torrent: whatapi.TorrentStruct{
+			Time: "2345-05-06 07:08:09",
+		},
+	}
+	r, err := gazelle.NewGetTorrentStruct(tracker, tr)
+	if err != nil {
+		t.Error(err)
+	}
+	gtime := time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC)
+	expected := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{Name: "tracker"},
+				Artists: map[string][]gazelle.Artist{
+					"Composer":  []gazelle.Artist{},
+					"DJ":        []gazelle.Artist{},
+					"Artist":    []gazelle.Artist{},
+					"With":      []gazelle.Artist{},
+					"Conductor": []gazelle.Artist{},
+					"RemixedBy": []gazelle.Artist{},
+					"Producer":  []gazelle.Artist{},
+				},
+			},
+			RecordLabel:     addrOf(""),
+			CatalogueNumber: addrOf(""),
+			CategoryID:      addrOfInt64(0),
+			CategoryName:    addrOf(""),
+			Time:            &gtime,
+			WikiImage:       addrOf(""),
+			WikiBody:        addrOf(""),
+			IsBookmarked:    addrOfBool(false),
+		},
+		Hash:                    addrOf(""),
+		RemasterCatalogueNumber: addrOf(""),
+		Reported:                addrOfBool(false),
+		Description:             addrOf(""),
+		FilePath:                addrOf(""),
+		UserID:                  addrOfInt(0),
+		Username:                addrOf(""),
+		Time:                    time.Date(2345, 5, 6, 7, 8, 9, 0, time.UTC),
+		Files:                   []whatapi.FileStruct{},
+		// LogChecksum
+	}
+	if err := TorrentsEqual(expected, r); err != nil {
+		t.Errorf("expected %v got %v, differs in %s", expected, r, err)
+	}
+}
+
+func TestNewGetTorrentStruct(t *testing.T) {
+	tracker := gazelle.Tracker{Name: "tracker"}
+	tr := whatapi.GetTorrentStruct{
+		Group:   groupStruct,
+		Torrent: torrentStruct,
+	}
+	r, err := gazelle.NewGetTorrentStruct(tracker, tr)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := expectTorrent
+	expected.Group = expectGroup
+	if err := TorrentsEqual(expected, r); err != nil {
+		t.Errorf("expected %v got %v, differs in %s", expected, r, err)
 	}
 }
