@@ -9,6 +9,8 @@ github.com/charles-haynes/whatapi v0.0.4 h1:ZM18Sen/CUMN0nVKmwaveAJKwgjL+qEPp4G2
 github.com/charles-haynes/whatapi v0.0.4/go.mod h1:k6Nba4XsV5fOOpQo1SmF061qOgmkUKUOg5PEQatzEJw=
 github.com/charles-haynes/whatapi v0.0.5 h1:xOiqDZ+ZNW3ZI4HcnLMZTa6Dp1xwAemTwCVWAtJtDzw=
 github.com/charles-haynes/whatapi v0.0.5/go.mod h1:k6Nba4XsV5fOOpQo1SmF061qOgmkUKUOg5PEQatzEJw=
+github.com/charles-haynes/whatapi v0.0.6 h1:ySIS+xLdJIri+s10q2sSyFiQ6+0ogq/KqA9VfQC1Yng=
+github.com/charles-haynes/whatapi v0.0.6/go.mod h1:k6Nba4XsV5fOOpQo1SmF061qOgmkUKUOg5PEQatzEJw=
 github.com/go-sql-driver/mysql v1.4.0 h1:7LxgVwFb2hIQtMm87NdgAVfXjnt4OePseqT1tKx+opk=
 github.com/go-sql-driver/mysql v1.4.0/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
 github.com/jmoiron/sqlx v1.2.0 h1:41Ip0zITnmWNR/vHV+S4m+VoUivnWY5E4OJfLZjCJMA=

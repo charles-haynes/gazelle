@@ -308,20 +308,31 @@ func (m MockWhatAPI) GetRequest(id int, params url.Values) (R whatapi.Request, e
 }
 func (m MockWhatAPI) GetTorrent(id int, params url.Values) (G whatapi.GetTorrentStruct, e error) {
 	m.Called()
-	torrent := whatapi.TorrentResponse{}
-	e = m.GetJSON(m.JSON, &torrent)
+	r := whatapi.TorrentResponse{}
+	e = m.GetJSON(m.JSON, &r)
 	if e != nil {
-		return torrent.Response, e
+		return r.Response, e
 	}
-	return torrent.Response, checkResponseStatus(torrent.Status, torrent.Error)
-	return
+	return r.Response, checkResponseStatus(r.Status, r.Error)
 }
 func (m MockWhatAPI) GetTorrentGroup(id int, params url.Values) (T whatapi.TorrentGroup, e error) {
 	m.Called()
+	r := whatapi.TorrentGroupResponse{}
+	e = m.GetJSON(m.JSON, &r)
+	if e != nil {
+		return r.Response, e
+	}
+	return r.Response, checkResponseStatus(r.Status, r.Error)
 	return
 }
 func (m MockWhatAPI) SearchTorrents(searchStr string, params url.Values) (T whatapi.TorrentSearch, e error) {
 	m.Called()
+	r := whatapi.TorrentSearchResponse{}
+	e = m.GetJSON(m.JSON, &r)
+	if e != nil {
+		return r.Response, e
+	}
+	return r.Response, checkResponseStatus(r.Status, r.Error)
 	return
 }
 func (m MockWhatAPI) SearchRequests(searchStr string, params url.Values) (R whatapi.RequestsSearch, e error) {
@@ -334,7 +345,12 @@ func (m MockWhatAPI) SearchUsers(searchStr string, params url.Values) (U whatapi
 }
 func (m MockWhatAPI) GetTopTenTorrents(params url.Values) (T whatapi.TopTenTorrents, e error) {
 	m.Called()
-	return
+	r := whatapi.TopTenTorrentsResponse{}
+	e = m.GetJSON(m.JSON, &r)
+	if e != nil {
+		return r.Response, e
+	}
+	return r.Response, checkResponseStatus(r.Status, r.Error)
 }
 func (m MockWhatAPI) GetTopTenTags(params url.Values) (T whatapi.TopTenTags, e error) {
 	m.Called()
@@ -353,8 +369,13 @@ func (m MockWhatAPI) ParseHTML(s string) (st string, e error) {
 	return
 }
 
-const torrent1JSON = `{"status":"success","response":{"group":{"wikiBody":"wikibody","wikiImage":"wikiimage","id":2,"name":"groupname","year":1234,"recordLabel":"recordlabel","catalogueNumber":"cataloguenumbr","releaseType":1,"categoryId":1,"categoryName":"categoryname","time":"1234-05-06 07:08:09","vanityHouse":true,"isBookmarked":true,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"artist1"},{"id":2,"name":"artist2"}],"with":[{"id":3,"name":"artist3"}],"conductor":[],"remixedBy":[],"producer":[]},"tags":["tag1","tag2"]},"torrent":{"id":1,"infoHash":"hash","media":"media","format":"format","encoding":"encoding","remastered":true,"remasterYear":4321,"remasterTitle":"remastertitle","remasterRecordLabel":"remasterrecordlabel","remasterCatalogueNumber":"remastercatalognumber","scene":true,"hasLog":true,"hasCue":true,"logScore":0,"fileCount":1,"size":2,"seeders":0,"leechers":0,"snatched":0,"freeTorrent":false,"reported":true,"time":"4321-11-30 11:59:59","description":"description","fileList":"apifile1{{{1}}}|||apifile2{{{2}}}","filePath":"filepath","userId":0,"username":"username"}}}`
-const torrentdsmJSON = `{"status":"success","response":{"group":{"wikiBody":"blah blah","wikiImage":"https:\/\/ptpimg.me\/yh5fqd.jpg","id":1,"name":"The Dark Side of the Moon","year":1973,"recordLabel":"","catalogueNumber":"","releaseType":1,"categoryId":1,"categoryName":"Music","time":"2019-08-28 17:46:53","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"Pink Floyd"}],"with":[],"conductor":[],"remixedBy":[],"producer":[]},"tags":["rock","experimental","progressive.rock","psychedelic","psychedelic.rock","space.rock","classic.rock","hard.rock","1970s","art.rock","british","staff.recs"]},"torrent":{"id":1,"infoHash":"C380B62A3EC6658597C56F45D596E8081B3F7A5C","media":"CD","format":"FLAC","encoding":"Lossless","remastered":true,"remasterYear":1988,"remasterTitle":"Japan MFSL UltraDisc #1, 24 Karat Gold","remasterRecordLabel":"Mobile Fidelity Sound Lab","remasterCatalogueNumber":"UDCD 517","scene":false,"hasLog":true,"hasCue":true,"logScore":70,"fileCount":12,"size":219114079,"seeders":100,"leechers":0,"snatched":414,"freeTorrent":false,"reported":false,"time":"2016-11-24 01:34:03","description":"[important]Staff: Technically trumped because EAC 0.95 logs are terrible. There is historic and sentimental value in keeping the first torrent ever uploaded to the site as well as a perfect modern rip. Take no action.[\/important]","fileList":"01 - Speak to Me.flac{{{3732587}}}|||02 -  Breathe.flac{{{14244409}}}|||03 - On the Run.flac{{{16541873}}}|||04 - Time.flac{{{35907465}}}|||05 -  The Great Gig in the Sky.flac{{{20671913}}}|||06 - Money.flac{{{37956922}}}|||07 -Us and Them.flac{{{39706774}}}|||08 - Any Colour You Like.flac{{{18736396}}}|||09 - Brain Damage.flac{{{20457034}}}|||10 - Eclipse.flac{{{11153655}}}|||Pink Floyd - Dark Side of the Moon.CUE{{{1435}}}|||Pink Floyd - Dark Side of the Moon.log{{{3616}}}","filePath":"Pink Floyd - Dark Side of the Moon (OMR MFSL 24k Gold Ultradisc II) fixed tags","userId":9,"username":"danger"}}}`
+const (
+	torrent1JSONBody = `{"id":1,"infoHash":"hash","media":"media","format":"format","encoding":"encoding","remastered":true,"remasterYear":4321,"remasterTitle":"remastertitle","remasterRecordLabel":"remasterrecordlabel","remasterCatalogueNumber":"remastercataloguenumber","scene":true,"hasLog":true,"hasCue":true,"logScore":0,"fileCount":1,"size":2,"seeders":0,"leechers":0,"snatched":0,"freeTorrent":false,"reported":true,"time":"4321-11-30 11:59:59","description":"description","fileList":"apifile1{{{1}}}|||apifile2{{{2}}}","filePath":"filepath","userId":0,"username":"username"}`
+	torrent1JSON     = `{"status":"success","response":{"group":{"wikiBody":"wikibody","wikiImage":"wikiimage","id":2,"name":"groupname","year":1234,"recordLabel":"recordlabel","catalogueNumber":"cataloguenumber","releaseType":1,"categoryId":1,"categoryName":"categoryname","time":"1234-05-06 07:08:09","vanityHouse":true,"isBookmarked":true,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"artist1"},{"id":2,"name":"artist2"}],"with":[{"id":3,"name":"artist3"}],"conductor":[],"remixedBy":[],"producer":[]},"tags":["tag1","tag2"]},"torrent":` + torrent1JSONBody + `}}`
+	torrentdsmJSON   = `{"status":"success","response":{"group":{"wikiBody":"blah blah","wikiImage":"https:\/\/ptpimg.me\/yh5fqd.jpg","id":1,"name":"The Dark Side of the Moon","year":1973,"recordLabel":"","catalogueNumber":"","releaseType":1,"categoryId":1,"categoryName":"Music","time":"2019-08-28 17:46:53","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"Pink Floyd"}],"with":[],"conductor":[],"remixedBy":[],"producer":[]},"tags":["rock","experimental","progressive.rock","psychedelic","psychedelic.rock","space.rock","classic.rock","hard.rock","1970s","art.rock","british","staff.recs"]},"torrent":{"id":1,"infoHash":"C380B62A3EC6658597C56F45D596E8081B3F7A5C","media":"CD","format":"FLAC","encoding":"Lossless","remastered":true,"remasterYear":1988,"remasterTitle":"Japan MFSL UltraDisc #1, 24 Karat Gold","remasterRecordLabel":"Mobile Fidelity Sound Lab","remasterCatalogueNumber":"UDCD 517","scene":false,"hasLog":true,"hasCue":true,"logScore":70,"fileCount":12,"size":219114079,"seeders":100,"leechers":0,"snatched":414,"freeTorrent":false,"reported":false,"time":"2016-11-24 01:34:03","description":"[important]Staff: Technically trumped because EAC 0.95 logs are terrible. There is historic and sentimental value in keeping the first torrent ever uploaded to the site as well as a perfect modern rip. Take no action.[\/important]","fileList":"01 - Speak to Me.flac{{{3732587}}}|||02 -  Breathe.flac{{{14244409}}}|||03 - On the Run.flac{{{16541873}}}|||04 - Time.flac{{{35907465}}}|||05 -  The Great Gig in the Sky.flac{{{20671913}}}|||06 - Money.flac{{{37956922}}}|||07 -Us and Them.flac{{{39706774}}}|||08 - Any Colour You Like.flac{{{18736396}}}|||09 - Brain Damage.flac{{{20457034}}}|||10 - Eclipse.flac{{{11153655}}}|||Pink Floyd - Dark Side of the Moon.CUE{{{1435}}}|||Pink Floyd - Dark Side of the Moon.log{{{3616}}}","filePath":"Pink Floyd - Dark Side of the Moon (OMR MFSL 24k Gold Ultradisc II) fixed tags","userId":9,"username":"danger"}}}`
+	group2JSONBody   = `{"group":{"wikiBody":"wikibody","wikiImage":"wikiimage","id":2,"name":"name","year":1234,"recordLabel":"label","catalogueNumber":"catalogue","releaseType":1,"categoryId":2,"categoryName":"category","time":"4321-05-06 07:08:09","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"artist1"},{"id":2,"name":"artist2"}],"with":[{"id":3,"name":"artist3"}],"conductor":[],"remixedBy":[],"producer":[]},"tags":["tag1","tag2"]},"torrents":[` + torrent1JSONBody + `,` + torrent1JSONBody + `]}`
+	group2JSON       = `{"status":"success","response":` + group2JSONBody + `}`
+)
 
 func TestArtistUpdate(t *testing.T) {
 	db := NewTestDB()
@@ -363,7 +384,7 @@ func TestArtistUpdate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	tracker := gazelle.Tracker{Name: "tracker"}
+	tracker := expectTracker
 	var ta gazelle.Artist
 	err = tx.Get(&ta, `SELECT name, id FROM artists WHERE id=?`, a.ID)
 	if err == nil {
@@ -399,7 +420,7 @@ func TestArtistsGetArtists(t *testing.T) {
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "tracker"},
+				Tracker: expectTracker,
 			},
 			ID: 2,
 		},
@@ -454,7 +475,7 @@ func TestArtistsUpdate(t *testing.T) {
 		t.Error(err)
 	}
 	a := gazelle.Artists{
-		Tracker: gazelle.Tracker{Name: "tracker"},
+		Tracker: expectTracker,
 		Artists: map[string][]gazelle.Artist{
 			"Artist": {{1, "artist1"}, {2, "artist2"}},
 		},
@@ -475,7 +496,7 @@ func TestArtistsUpdate(t *testing.T) {
 }
 
 func TestNewMusicInfo(t *testing.T) {
-	tracker := gazelle.Tracker{Name: "tracker"}
+	tracker := expectTracker
 	mi := whatapi.MusicInfo{
 		Artists: []whatapi.MusicInfoStruct{{1, "artist1"}, {2, "artist2"}},
 		With:    []whatapi.MusicInfoStruct{{3, "artist3"}},
@@ -499,7 +520,7 @@ func TestNewMusicInfo(t *testing.T) {
 }
 
 func TestNewExtendedArtistMap(t *testing.T) {
-	tracker := gazelle.Tracker{Name: "tracker"}
+	tracker := expectTracker
 	am := whatapi.ExtendedArtistMap{
 		"1": []whatapi.ArtistAlias{
 			{1, "artist1", 4},
@@ -540,7 +561,7 @@ func TestTorrentShortName(t *testing.T) {
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "tracker"},
+				Tracker: expectTracker,
 			},
 		},
 		ID: 1,
@@ -816,12 +837,27 @@ func TestGroupUpdate(t *testing.T) {
 	}
 }
 
+func ArtistsEqual(a1, a2 gazelle.Artists) error {
+	if reflect.DeepEqual(a1, a2) {
+		return nil
+	}
+	if !reflect.DeepEqual(a1.Tracker, a2.Tracker) {
+		return fmt.Errorf("Tracker")
+	}
+	for i := range a1.Artists {
+		if !reflect.DeepEqual(a1.Artists[i], a2.Artists[i]) {
+			return fmt.Errorf("Artists[%s]", i)
+		}
+	}
+	return fmt.Errorf("unknown: did you leave a field off Artists?")
+}
+
 func GroupsEqual(g1, g2 gazelle.Group) error {
 	if reflect.DeepEqual(g1, g2) {
 		return nil
 	}
-	if !reflect.DeepEqual(g1.Artists, g2.Artists) {
-		return fmt.Errorf("Artists")
+	if err := ArtistsEqual(g1.Artists, g2.Artists); err != nil {
+		return fmt.Errorf("Artists.%s", err)
 	}
 	if !reflect.DeepEqual(g1.ID, g2.ID) {
 		return fmt.Errorf("ID")
@@ -988,22 +1024,22 @@ var (
 		IsBookmarked: true,
 		TagsF:        []string{"tag1", "tag2"},
 	}
+	expectTracker = gazelle.Tracker{Name: "tracker"}
+	expectArtists = gazelle.Artists{
+		Tracker: expectTracker,
+		Artists: map[string][]gazelle.Artist{
+			"Artist":    {{4, "artist4"}, {5, "artist5"}},
+			"Composer":  {},
+			"Conductor": {},
+			"DJ":        {},
+			"Producer":  {},
+			"RemixedBy": {},
+			"With":      {{6, "artist6"}},
+		},
+	}
 	gtime       = time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC)
 	expectGroup = gazelle.Group{
-		Artists: gazelle.Artists{
-			Tracker: gazelle.Tracker{
-				Name: "tracker",
-			},
-			Artists: map[string][]gazelle.Artist{
-				"Artist":    {{4, "artist4"}, {5, "artist5"}},
-				"Composer":  {},
-				"Conductor": {},
-				"DJ":        {},
-				"Producer":  {},
-				"RemixedBy": {},
-				"With":      {{6, "artist6"}},
-			},
-		},
+		Artists:         expectArtists,
 		ID:              1,
 		Name:            "name",
 		Year:            2,
@@ -1022,43 +1058,13 @@ var (
 )
 
 func TestNewGroupStruct(t *testing.T) {
-	tracker := gazelle.Tracker{Name: "tracker"}
+	tracker := expectTracker
 	gs := groupStruct
 	r, err := gazelle.NewGroupStruct(tracker, gs)
 	if err != nil {
 		t.Error(err)
 	}
-	gtime := time.Date(1234, time.May, 6, 7, 8, 9, 0, time.UTC)
-	expected := gazelle.Group{
-		Artists: gazelle.Artists{
-			Tracker: gazelle.Tracker{
-				Name: "tracker",
-			},
-			Artists: map[string][]gazelle.Artist{
-				"Artist":    {{4, "artist4"}, {5, "artist5"}},
-				"Composer":  {},
-				"Conductor": {},
-				"DJ":        {},
-				"Producer":  {},
-				"RemixedBy": {},
-				"With":      {{6, "artist6"}},
-			},
-		},
-		ID:              1,
-		Name:            "name",
-		Year:            2,
-		RecordLabel:     addrOf("recordlabel"),
-		CatalogueNumber: addrOf("cataloguenumber"),
-		ReleaseTypeF:    int64(7),
-		CategoryID:      addrOfInt64(3),
-		CategoryName:    addrOf("categoryname"),
-		Time:            &gtime,
-		VanityHouse:     true,
-		WikiImage:       addrOf("wikiimage"),
-		WikiBody:        addrOf("wikibody"),
-		IsBookmarked:    addrOfBool(true),
-		Tags:            "tag1,tag2",
-	}
+	expected := expectGroup
 	if err := GroupsEqual(expected, r); err != nil {
 		t.Errorf("expected %v got %v, differs in %s", expected, r, err)
 	}
@@ -1080,7 +1086,7 @@ INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "tracker"},
+				Tracker: expectTracker,
 			},
 			ID: 2,
 		},
@@ -1121,7 +1127,7 @@ func TestTorrentUpdate(t *testing.T) {
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "tracker"},
+				Tracker: expectTracker,
 			},
 			ID: 2,
 		},
@@ -1514,7 +1520,7 @@ func TestNewSearchTorrentStruct_EmptySearchTorrentStruct(t *testing.T) {
 	}
 	expected := gazelle.Torrent{
 		RemasterCatalogueNumber: addrOf(""),
-		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+		Time:                    gtime,
 	}
 	if err := TorrentsEqual(expected, r); err != nil {
 		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
@@ -1567,7 +1573,7 @@ func TestNewSearchTorrentStruct(t *testing.T) {
 		Size:                    4,
 		Seeders:                 5,
 		Leechers:                6,
-		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+		Time:                    gtime,
 	}
 	if err := TorrentsEqual(expected, r); err != nil {
 		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
@@ -1588,7 +1594,7 @@ func TestNewTorrentSearch_EmptyTorrentSearch(t *testing.T) {
 }
 
 func TestNewTorrentSearch(t *testing.T) {
-	tracker := gazelle.Tracker{Name: "tracker"}
+	tracker := expectTracker
 	ts := whatapi.TorrentSearch{
 		Results: []whatapi.TorrentSearchResultStruct{
 			{
@@ -1688,7 +1694,7 @@ func TestNewTorrentSearch(t *testing.T) {
 			Size:                    4,
 			Seeders:                 5,
 			Leechers:                6,
-			Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+			Time:                    gtime,
 		},
 		{
 			Group: gazelle.Group{
@@ -1724,7 +1730,7 @@ func TestNewTorrentSearch(t *testing.T) {
 			Size:                    4,
 			Seeders:                 5,
 			Leechers:                6,
-			Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+			Time:                    gtime,
 		},
 	}
 	if len(expected) != len(r) {
@@ -2077,7 +2083,7 @@ INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,
 	src := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "tracker"},
+				Tracker: expectTracker,
 			},
 		},
 		ID: 1,
@@ -2126,7 +2132,7 @@ INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
 	src := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "tracker"},
+				Tracker: expectTracker,
 			},
 		},
 		ID: 1,
@@ -2148,7 +2154,7 @@ INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
 	if err != nil {
 		t.Error(err)
 	}
-	time := time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC)
+	time := gtime
 	expected := []cross{{"tracker", 1, nil, nil, &time}}
 	if !reflect.DeepEqual(expected, r) {
 		t.Errorf("expected %v got %v", expected, r)
@@ -2173,7 +2179,7 @@ INSERT INTO torrents VALUES ("other",4,3,"hash2","","","",false,0,"","",NULL,fal
 	src := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "tracker"},
+				Tracker: expectTracker,
 			},
 		},
 		ID: 1,
@@ -2238,7 +2244,7 @@ INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
 	src := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "tracker"},
+				Tracker: expectTracker,
 			},
 		},
 		ID: 1,
@@ -2308,7 +2314,7 @@ func TestNewTorrentStruct_Empty(t *testing.T) {
 		FilePath:                addrOf(""),
 		UserID:                  addrOfInt(0),
 		Username:                addrOf(""),
-		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+		Time:                    gtime,
 		Files:                   files,
 	}
 	if err := TorrentsEqual(expected, r); err != nil {
@@ -2347,6 +2353,7 @@ var (
 		Username:                 "username",
 	}
 	expectTorrent = gazelle.Torrent{
+		Group:                   expectGroup,
 		ID:                      1,
 		Hash:                    addrOf("hash"),
 		Media:                   "media",
@@ -2368,7 +2375,7 @@ var (
 		Snatched:                6,
 		FreeTorrent:             true,
 		Reported:                addrOfBool(false),
-		Time:                    time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC),
+		Time:                    gtime,
 		Description:             addrOf("description"),
 		FilePath:                addrOf("file/path"),
 		UserID:                  addrOfInt(7),
@@ -2378,26 +2385,20 @@ var (
 )
 
 func TestNewTorrentStruct(t *testing.T) {
-	g := gazelle.Group{
-		Artists: gazelle.Artists{
-			Tracker: gazelle.Tracker{Name: "tracker"},
-		},
-		ID: 2,
-	}
+	g := expectGroup
 	ts := torrentStruct
 	r, err := gazelle.NewTorrentStruct(g, ts)
 	if err != nil {
 		t.Error(err)
 	}
 	expected := expectTorrent
-	expected.Group = g
 	if err := TorrentsEqual(expected, r); err != nil {
 		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
 	}
 }
 
 func TestNewGetTorrentStruct_Empty(t *testing.T) {
-	tracker := gazelle.Tracker{Name: "tracker"}
+	tracker := expectTracker
 	tr := whatapi.GetTorrentStruct{
 		Group: whatapi.GroupStruct{
 			Time: "1234-05-06 07:08:09",
@@ -2410,11 +2411,10 @@ func TestNewGetTorrentStruct_Empty(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	gtime := time.Date(1234, 5, 6, 7, 8, 9, 0, time.UTC)
 	expected := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "tracker"},
+				Tracker: expectTracker,
 				Artists: map[string][]gazelle.Artist{
 					"Composer":  []gazelle.Artist{},
 					"DJ":        []gazelle.Artist{},
@@ -2451,7 +2451,7 @@ func TestNewGetTorrentStruct_Empty(t *testing.T) {
 }
 
 func TestNewGetTorrentStruct(t *testing.T) {
-	tracker := gazelle.Tracker{Name: "tracker"}
+	tracker := expectTracker
 	tr := whatapi.GetTorrentStruct{
 		Group:   groupStruct,
 		Torrent: torrentStruct,
@@ -2464,5 +2464,249 @@ func TestNewGetTorrentStruct(t *testing.T) {
 	expected.Group = expectGroup
 	if err := TorrentsEqual(expected, r); err != nil {
 		t.Errorf("expected %v got %v, differs in %s", expected, r, err)
+	}
+}
+
+func TestTrackerGetTorrent_BadID(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  `{"status":"failure","error":"bad id parameter"}`,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{WhatAPI: m, Name: "tracker"}
+	_, err := tracker.GetTorrent(1)
+	if err == nil {
+		t.Errorf("expected error bad id parameter, but got nil")
+	}
+	if !strings.Contains(err.Error(), "bad id parameter") {
+		t.Errorf("expected error bad id parameter, but got %v", err)
+	}
+	if !m.Contains("GetJSON") {
+		t.Errorf("expected to fetch JSON")
+	}
+}
+
+var (
+	jsonGroup = gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: expectTracker,
+			Artists: map[string][]gazelle.Artist{
+				"Artist":    []gazelle.Artist{{ID: 1, Name: "artist1"}, {ID: 2, Name: "artist2"}},
+				"Composer":  []gazelle.Artist{},
+				"Conductor": []gazelle.Artist{},
+				"DJ":        []gazelle.Artist{},
+				"Producer":  []gazelle.Artist{},
+				"RemixedBy": []gazelle.Artist{},
+				"With":      []gazelle.Artist{{ID: 3, Name: "artist3"}},
+			},
+		},
+		ID:              2,
+		Name:            "groupname",
+		Year:            1234,
+		RecordLabel:     addrOf("recordlabel"),
+		CatalogueNumber: addrOf("cataloguenumber"),
+		ReleaseTypeF:    1,
+		CategoryID:      addrOfInt64(1),
+		CategoryName:    addrOf("categoryname"),
+		Time:            &gtime,
+		VanityHouse:     true,
+		WikiImage:       addrOf("wikiimage"),
+		WikiBody:        addrOf("wikibody"),
+		IsBookmarked:    addrOfBool(true),
+		Tags:            "tag1,tag2",
+	}
+	jsonTorrent = gazelle.Torrent{
+		Group:                   jsonGroup,
+		ID:                      1,
+		Hash:                    addrOf("hash"),
+		Media:                   "media",
+		Format:                  "format",
+		Encoding:                "encoding",
+		Remastered:              true,
+		RemasterYear:            4321,
+		RemasterTitle:           "remastertitle",
+		RemasterRecordLabel:     "remasterrecordlabel",
+		RemasterCatalogueNumber: addrOf("remastercataloguenumber"),
+		Scene:                   true,
+		HasLog:                  true,
+		HasCue:                  true,
+		LogScore:                0,
+		FileCount:               1,
+		Size:                    2,
+		Seeders:                 0,
+		Leechers:                0,
+		Snatched:                0,
+		FreeTorrent:             false,
+		Reported:                addrOfBool(true),
+		Time:                    time.Date(4321, 11, 30, 11, 59, 59, 0, time.UTC),
+		Description:             addrOf("description"),
+		FilePath:                addrOf("filepath"),
+		UserID:                  addrOfInt(0),
+		Username:                addrOf("username"),
+		Files:                   []whatapi.FileStruct{{"apifile1", 1}, {"apifile2", 2}},
+	}
+)
+
+func TestTrackerGetTorrent_ByID(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  torrent1JSON,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{WhatAPI: m, Name: "tracker"}
+	r, err := tracker.GetTorrent(1)
+	if err != nil {
+		t.Error(err)
+	}
+	if !m.Contains("GetJSON") {
+		t.Errorf("expected to fetch JSON")
+	}
+	expected := jsonTorrent
+	expected.Tracker = tracker
+	if err := TorrentsEqual(expected, r); err != nil {
+		t.Errorf("expected %#v got %#v, differ in %s", expected, r, err)
+	}
+}
+
+func TestTrackerGetTorrentByHash_BadHash(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  `{"status":"failure","error":"bad id parameter"}`,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{WhatAPI: m, Name: "tracker"}
+	_, err := tracker.GetTorrentByHash("hash")
+	if err == nil {
+		t.Errorf("expected error bad id parameter, but got nil")
+	}
+	if !strings.Contains(err.Error(), "bad id parameter") {
+		t.Errorf("expected error bad id parameter, but got %v", err)
+	}
+	if !m.Contains("GetJSON") {
+		t.Errorf("expected to fetch JSON")
+	}
+}
+
+func TestTrackerGetTorrentByHash(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  torrent1JSON,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{WhatAPI: m, Name: "tracker"}
+	r, err := tracker.GetTorrentByHash("hash")
+	if err != nil {
+		t.Error(err)
+	}
+	if !m.Contains("GetJSON") {
+		t.Errorf("expected to fetch JSON")
+	}
+	expected := jsonTorrent
+	expected.Tracker = tracker
+	if err := TorrentsEqual(expected, r); err != nil {
+		t.Errorf("expected %#v got %#v, differ in %s", expected, r, err)
+	}
+}
+
+func TestNewTorrentGroup(t *testing.T) {
+	tracker := expectTracker
+	tg := whatapi.TorrentGroup{
+		Group: groupStruct,
+		Torrent: []whatapi.TorrentStruct{
+			torrentStruct,
+			torrentStruct,
+		},
+	}
+	r, err := gazelle.NewTorrentGroup(tracker, tg)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []gazelle.Torrent{
+		expectTorrent,
+		expectTorrent,
+	}
+	if len(expected) != len(r) {
+		t.Errorf("expected %d results got %d", len(expected), len(r))
+	}
+	for i := range expected {
+		if err := TorrentsEqual(expected[i], r[i]); err != nil {
+			t.Errorf("%d: expected %v got %v, differs in %s",
+				i, expected[i], r[i], err)
+		}
+	}
+}
+
+func TestTrackerGetGroup_BadID(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  `{"status":"failure","error":"bad id parameter"}`,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{
+		WhatAPI: m,
+		Name:    "tracker",
+	}
+	_, err := tracker.GetGroup(2)
+	if err == nil {
+		t.Errorf("expected error bad id parameter, but got nil")
+	}
+	if !strings.Contains(err.Error(), "bad id parameter") {
+		t.Errorf("expected error bad id parameter, but got %v", err)
+	}
+	if !m.Contains("GetJSON") {
+		t.Errorf("expected to fetch JSON")
+	}
+}
+
+func TestTrackerGetGroup(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  group2JSON,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{
+		WhatAPI: m,
+		Name:    "tracker",
+	}
+	r, err := tracker.GetGroup(2)
+	if err != nil {
+		t.Error(err)
+	}
+	to := jsonTorrent
+	ti := time.Date(4321, 5, 6, 7, 8, 9, 0, time.UTC)
+	to.Group = gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: tracker,
+			Artists: map[string][]gazelle.Artist{
+				"Artist":    {{1, "artist1"}, {2, "artist2"}},
+				"Composer":  {},
+				"Conductor": {},
+				"DJ":        {},
+				"Producer":  {},
+				"RemixedBy": {},
+				"With":      {{3, "artist3"}},
+			},
+		},
+		ID:              2,
+		Name:            "name",
+		Year:            1234,
+		RecordLabel:     addrOf("label"),
+		CatalogueNumber: addrOf("catalogue"),
+		ReleaseTypeF:    1,
+		CategoryID:      addrOfInt64(2),
+		CategoryName:    addrOf("category"),
+		Time:            &ti,
+		VanityHouse:     false,
+		IsBookmarked:    addrOfBool(false),
+		Tags:            "tag1,tag2",
+		WikiImage:       addrOf("wikiimage"),
+		WikiBody:        addrOf("wikibody"),
+	}
+	expected := []gazelle.Torrent{
+		to,
+		to,
+	}
+	if len(expected) != len(r) {
+		t.Errorf("expected %d results got %d", len(expected), len(r))
+	}
+	for i := range expected {
+		if err := TorrentsEqual(expected[i], r[i]); err != nil {
+			t.Errorf("%d: expected %v got %v, differs in %s",
+				i, expected[i], r[i], err)
+		}
 	}
 }
