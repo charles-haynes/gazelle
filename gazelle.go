@@ -878,18 +878,23 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 				},
 			}
 			groupCategory := int64(r.GroupCategory)
+			rt, err := strconv.ParseInt(r.ReleaseType, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("releaseType: %w", err)
+			}
 			g := Group{
-				Artists:    a,
-				ID:         int64(r.GroupID),
-				Name:       r.GroupName,
-				CategoryID: &groupCategory,
-				Year:       int64(r.GroupYear),
-				Tags:       strings.Join(r.Tags, ","),
-				WikiImage:  &t.Results[i].WikiImage,
+				Artists:      a,
+				ID:           int64(r.GroupID),
+				Name:         r.GroupName,
+				CategoryID:   &groupCategory,
+				Year:         int64(r.GroupYear),
+				Tags:         strings.Join(r.Tags, ","),
+				WikiImage:    &t.Results[i].WikiImage,
+				ReleaseTypeF: rt,
 			}
 			logScore, err := strconv.Atoi(r.LogScore)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("LogScore: %w", err)
 			}
 			logChecksum := r.LogChecksum == "1"
 			res[r.TorrentID] = Torrent{
@@ -923,7 +928,6 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 				// UserName
 				// Files
 				// r.Data
-				// r.ReleaseType,
 			}
 		}
 	}
