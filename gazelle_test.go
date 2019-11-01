@@ -379,104 +379,10 @@ const (
 	torrent1JSONBody = `{"id":1,"infoHash":"hash","media":"media","format":"format","encoding":"encoding","remastered":true,"remasterYear":4321,"remasterTitle":"remastertitle","remasterRecordLabel":"remasterrecordlabel","remasterCatalogueNumber":"remastercataloguenumber","scene":true,"hasLog":true,"hasCue":true,"logScore":0,"fileCount":1,"size":2,"seeders":0,"leechers":0,"snatched":0,"freeTorrent":false,"reported":true,"time":"4321-11-30 11:59:59","description":"description","fileList":"apifile1{{{1}}}|||apifile2{{{2}}}","filePath":"filepath","userId":0,"username":"username"}`
 	torrent1JSON     = `{"status":"success","response":{"group":{"wikiBody":"wikibody","wikiImage":"wikiimage","id":2,"name":"groupname","year":1234,"recordLabel":"recordlabel","catalogueNumber":"cataloguenumber","releaseType":1,"categoryId":1,"categoryName":"categoryname","time":"1234-05-06 07:08:09","vanityHouse":true,"isBookmarked":true,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"artist1"},{"id":2,"name":"artist2"}],"with":[{"id":3,"name":"artist3"}],"conductor":[],"remixedBy":[],"producer":[]},"tags":["tag1","tag2"]},"torrent":` + torrent1JSONBody + `}}`
 	torrentdsmJSON   = `{"status":"success","response":{"group":{"wikiBody":"blah blah","wikiImage":"https:\/\/ptpimg.me\/yh5fqd.jpg","id":1,"name":"The Dark Side of the Moon","year":1973,"recordLabel":"","catalogueNumber":"","releaseType":1,"categoryId":1,"categoryName":"Music","time":"2019-08-28 17:46:53","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"Pink Floyd"}],"with":[],"conductor":[],"remixedBy":[],"producer":[]},"tags":["rock","experimental","progressive.rock","psychedelic","psychedelic.rock","space.rock","classic.rock","hard.rock","1970s","art.rock","british","staff.recs"]},"torrent":{"id":1,"infoHash":"C380B62A3EC6658597C56F45D596E8081B3F7A5C","media":"CD","format":"FLAC","encoding":"Lossless","remastered":true,"remasterYear":1988,"remasterTitle":"Japan MFSL UltraDisc #1, 24 Karat Gold","remasterRecordLabel":"Mobile Fidelity Sound Lab","remasterCatalogueNumber":"UDCD 517","scene":false,"hasLog":true,"hasCue":true,"logScore":70,"fileCount":12,"size":219114079,"seeders":100,"leechers":0,"snatched":414,"freeTorrent":false,"reported":false,"time":"2016-11-24 01:34:03","description":"[important]Staff: Technically trumped because EAC 0.95 logs are terrible. There is historic and sentimental value in keeping the first torrent ever uploaded to the site as well as a perfect modern rip. Take no action.[\/important]","fileList":"01 - Speak to Me.flac{{{3732587}}}|||02 -  Breathe.flac{{{14244409}}}|||03 - On the Run.flac{{{16541873}}}|||04 - Time.flac{{{35907465}}}|||05 -  The Great Gig in the Sky.flac{{{20671913}}}|||06 - Money.flac{{{37956922}}}|||07 -Us and Them.flac{{{39706774}}}|||08 - Any Colour You Like.flac{{{18736396}}}|||09 - Brain Damage.flac{{{20457034}}}|||10 - Eclipse.flac{{{11153655}}}|||Pink Floyd - Dark Side of the Moon.CUE{{{1435}}}|||Pink Floyd - Dark Side of the Moon.log{{{3616}}}","filePath":"Pink Floyd - Dark Side of the Moon (OMR MFSL 24k Gold Ultradisc II) fixed tags","userId":9,"username":"danger"}}}`
-	group2JSONBody   = `{"group":{"wikiBody":"wikibody","wikiImage":"wikiimage","id":2,"name":"name","year":1234,"recordLabel":"label","catalogueNumber":"catalogue","releaseType":1,"categoryId":2,"categoryName":"category","time":"4321-05-06 07:08:09","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"artist1"},{"id":2,"name":"artist2"}],"with":[{"id":3,"name":"artist3"}],"conductor":[],"remixedBy":[],"producer":[]},"tags":["tag1","tag2"]},"torrents":[` + torrent1JSONBody + `,` + torrent1JSONBody + `]}`
-	group2JSON       = `{"status":"success","response":` + group2JSONBody + `}`
-	artist1JSON      = `{"status":"success","response":` + artist1JSONBody + `}`
-	artist1JSONBody  = `{"id":1,"name":"name","notificationsEnabled":false,"hasBookmarked":false,"image":"image","body":"body","vanityHouse":false,"tags":[{"name":"tag","count":2}],"similarArtists":[{"artistId":2,"name":"name2","score":99,"similarId":1}],"statistics":{"numGroups":3,"numTorrents":12,"numSeeders":68,"numLeechers":0,"numSnatches":123},"torrentgroup":[{"groupId":3,"groupName":"groupname","groupYear":2011,"groupRecordLabel":"label","groupCatalogueNumber":"catalogue","groupCategoryID":"1","tags":["tag1","tag2"],"releaseType":6,"wikiImage":"wikiimage","groupVanityHouse":false,"hasBookmarked":false,"artists":[{"id":1,"name":"name","aliasid":2}],"extendedArtists":{"1":[{"id":1,"name":"name","aliasid":2}],"2":[{"id":2,"name":"name2","aliasid":3},{"id":3,"name":"name3","aliasid":4}],"3":null,"4":null,"5":null,"6":null,"7":null},"torrent":[{"id":31,"groupId":3,"media":"media","format":"format","encoding":"encoding","remasterYear":0,"remastered":false,"remasterTitle":"title31","remasterRecordLabel":"label31","scene":false,"hasLog":true,"hasCue":true,"logScore":100,"fileCount":311,"freeTorrent":false,"size":312,"leechers":313,"seeders":314,"snatched":315,"time":"0316-12-04 19:02:37","hasFile":317},{"id":32,"groupId":3,"media":"media","format":"format","encoding":"encoding","remasterYear":0,"remastered":false,"remasterTitle":"","remasterRecordLabel":"","scene":false,"hasLog":false,"hasCue":false,"logScore":0,"fileCount":321,"freeTorrent":false,"size":322,"leechers":323,"seeders":324,"snatched":325,"time":"0326-01-14 23:21:30","hasFile":327},{"id":33,"groupId":3,"media":"media","format":"format","encoding":"encoding","remasterYear":0,"remastered":false,"remasterTitle":"","remasterRecordLabel":"","scene":false,"hasLog":false,"hasCue":false,"logScore":0,"fileCount":331,"freeTorrent":false,"size":332,"leechers":0,"seeders":333,"snatched":334,"time":"0335-01-14 23:23:01","hasFile":336}]},{"groupId":4,"groupName":"group4","groupYear":2008,"groupRecordLabel":"label4","groupCatalogueNumber":"catalog4","groupCategoryID":"1","tags":["tag4"],"releaseType":7,"wikiImage":"wikiimage4","groupVanityHouse":false,"hasBookmarked":false,"artists":[{"id":41,"name":"artist41","aliasid":42}],"extendedArtists":{"1":[{"id":41,"name":"artist41","aliasid":42 }],"2":null,"3":null,"4":null,"5":null,"6":null,"7":null},"torrent":[{"id":41,"groupId":4,"media":"media","format":"format","encoding":"encoding","remasterYear":411,"remastered":true,"remasterTitle":"","remasterRecordLabel":"recordlabel41","scene":false,"hasLog":true,"hasCue":true,"logScore":100,"fileCount":411,"freeTorrent":false,"size":412,"leechers":0,"seeders":413,"snatched":414,"time":"0415-11-28 17:15:33","hasFile":416},{"id":42,"groupId":4,"media":"media","format":"format","encoding":"encoding","remasterYear":421,"remastered":true,"remasterTitle":"","remasterRecordLabel":"label42","scene":false,"hasLog":false,"hasCue":false,"logScore":0,"fileCount":422,"freeTorrent":false,"size":423,"leechers":0,"seeders":424,"snatched":425,"time":"0426-08-14 11:50:18","hasFile":427}]}],"requests":[]}`
-	searchJSON       = `{"status":"success","response":` + searchJSONBody + `}`
-	searchJSONBody   = `{
-    "currentPage": 1,
-    "pages": 1,
-    "results": [
-      {
-        "groupId": 1,
-        "groupName": "group1",
-        "artist": "artist1",
-        "cover": "cover1",
-        "tags": ["tag1"],
-        "bookmarked": false,
-        "vanityHouse": false,
-        "groupYear": 2001,
-        "releaseType": "Album",
-        "groupTime": "1542580193",
-        "maxSize": 12,
-        "totalSnatched": 13,
-        "totalSeeders": 14,
-        "totalLeechers": 0,
-        "torrents": [
-          {
-            "torrentId": 11,
-            "editionId": 1,
-            "artists": [
-              {
-                "id": 111,
-                "name": "artist111",
-                "aliasid": 1112
-              }
-            ],
-            "remastered": false,
-            "remasterYear": 0,
-            "remasterCatalogueNumber": "",
-            "remasterTitle": "",
-            "media": "media",
-            "encoding": "encoding",
-            "format": "format",
-            "hasLog": true,
-            "logScore": 100,
-            "hasCue": true,
-            "scene": false,
-            "vanityHouse": false,
-            "fileCount": 112,
-            "time": "2113-12-17 01:33:21",
-            "size": 114,
-            "snatches": 115,
-            "seeders": 116,
-            "leechers": 0,
-            "isFreeleech": false,
-            "isNeutralLeech": false,
-            "isPersonalFreeleech": false,
-            "canUseToken": true,
-            "hasSnatched": false
-          },
-          {
-            "torrentId": 12,
-            "editionId": 2,
-            "artists": [
-              {
-                "id": 111,
-                "name": "artist111",
-                "aliasid": 1112
-              }
-            ],
-            "remastered": true,
-            "remasterYear": 2122,
-            "remasterCatalogueNumber": "",
-            "remasterTitle": "",
-            "media": "media",
-            "encoding": "encoding",
-            "format": "format",
-            "hasLog": false,
-            "logScore": 0,
-            "hasCue": false,
-            "scene": false,
-            "vanityHouse": false,
-            "fileCount": 123,
-            "time": "2124-02-06 07:54:25",
-            "size": 125,
-            "snatches": 126,
-            "seeders": 127,
-            "leechers": 0,
-            "isFreeleech": false,
-            "isNeutralLeech": false,
-            "isPersonalFreeleech": false,
-            "canUseToken": true,
-            "hasSnatched": false
-          }
-        ]
-      }
-    ]
-  }
-`
+	group2JSON       = `{"status":"success","response":{"group":{"wikiBody":"wikibody","wikiImage":"wikiimage","id":2,"name":"name","year":1234,"recordLabel":"label","catalogueNumber":"catalogue","releaseType":1,"categoryId":2,"categoryName":"category","time":"4321-05-06 07:08:09","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"artist1"},{"id":2,"name":"artist2"}],"with":[{"id":3,"name":"artist3"}],"conductor":[],"remixedBy":[],"producer":[]},"tags":["tag1","tag2"]},"torrents":[` + torrent1JSONBody + `,` + torrent1JSONBody + `]}}`
+	artist1JSON      = `{"status":"success","response":{"id":1,"name":"name","notificationsEnabled":false,"hasBookmarked":false,"image":"image","body":"body","vanityHouse":false,"tags":[{"name":"tag","count":2}],"similarArtists":[{"artistId":2,"name":"name2","score":99,"similarId":1}],"statistics":{"numGroups":3,"numTorrents":12,"numSeeders":68,"numLeechers":0,"numSnatches":123},"torrentgroup":[{"groupId":3,"groupName":"groupname","groupYear":2011,"groupRecordLabel":"label","groupCatalogueNumber":"catalogue","groupCategoryID":"1","tags":["tag1","tag2"],"releaseType":6,"wikiImage":"wikiimage","groupVanityHouse":false,"hasBookmarked":false,"artists":[{"id":1,"name":"name","aliasid":2}],"extendedArtists":{"1":[{"id":1,"name":"name","aliasid":2}],"2":[{"id":2,"name":"name2","aliasid":3},{"id":3,"name":"name3","aliasid":4}],"3":null,"4":null,"5":null,"6":null,"7":null},"torrent":[{"id":31,"groupId":3,"media":"media","format":"format","encoding":"encoding","remasterYear":0,"remastered":false,"remasterTitle":"title31","remasterRecordLabel":"label31","scene":false,"hasLog":true,"hasCue":true,"logScore":100,"fileCount":311,"freeTorrent":false,"size":312,"leechers":313,"seeders":314,"snatched":315,"time":"0316-12-04 19:02:37","hasFile":317},{"id":32,"groupId":3,"media":"media","format":"format","encoding":"encoding","remasterYear":0,"remastered":false,"remasterTitle":"","remasterRecordLabel":"","scene":false,"hasLog":false,"hasCue":false,"logScore":0,"fileCount":321,"freeTorrent":false,"size":322,"leechers":323,"seeders":324,"snatched":325,"time":"0326-01-14 23:21:30","hasFile":327},{"id":33,"groupId":3,"media":"media","format":"format","encoding":"encoding","remasterYear":0,"remastered":false,"remasterTitle":"","remasterRecordLabel":"","scene":false,"hasLog":false,"hasCue":false,"logScore":0,"fileCount":331,"freeTorrent":false,"size":332,"leechers":0,"seeders":333,"snatched":334,"time":"0335-01-14 23:23:01","hasFile":336}]},{"groupId":4,"groupName":"group4","groupYear":2008,"groupRecordLabel":"label4","groupCatalogueNumber":"catalog4","groupCategoryID":"1","tags":["tag4"],"releaseType":7,"wikiImage":"wikiimage4","groupVanityHouse":false,"hasBookmarked":false,"artists":[{"id":41,"name":"artist41","aliasid":42}],"extendedArtists":{"1":[{"id":41,"name":"artist41","aliasid":42 }],"2":null,"3":null,"4":null,"5":null,"6":null,"7":null},"torrent":[{"id":41,"groupId":4,"media":"media","format":"format","encoding":"encoding","remasterYear":411,"remastered":true,"remasterTitle":"","remasterRecordLabel":"recordlabel41","scene":false,"hasLog":true,"hasCue":true,"logScore":100,"fileCount":411,"freeTorrent":false,"size":412,"leechers":0,"seeders":413,"snatched":414,"time":"0415-11-28 17:15:33","hasFile":416},{"id":42,"groupId":4,"media":"media","format":"format","encoding":"encoding","remasterYear":421,"remastered":true,"remasterTitle":"","remasterRecordLabel":"label42","scene":false,"hasLog":false,"hasCue":false,"logScore":0,"fileCount":422,"freeTorrent":false,"size":423,"leechers":0,"seeders":424,"snatched":425,"time":"0426-08-14 11:50:18","hasFile":427}]}],"requests":[]}}`
+	searchJSON       = `{"status":"success","response":{"currentPage":1,"pages":1,"results":[{"groupId":1,"groupName":"group1","artist":"artist1","cover":"cover1","tags":["tag1"],"bookmarked":false,"vanityHouse":false,"groupYear":2001,"releaseType":"Album","groupTime":"1542580193","maxSize":12,"totalSnatched":13,"totalSeeders":14,"totalLeechers":0,"torrents":[{"torrentId":11,"editionId":1,"artists":[{"id":111,"name":"artist111","aliasid":1112}],"remastered":false,"remasterYear":0,"remasterCatalogueNumber":"","remasterTitle":"","media":"media","encoding":"encoding","format":"format","hasLog":true,"logScore":100,"hasCue":true,"scene":false,"vanityHouse":false,"fileCount":112,"time":"2113-12-17 01:33:21","size":114,"snatches":115,"seeders":116,"leechers":0,"isFreeleech":false,"isNeutralLeech":false,"isPersonalFreeleech":false,"canUseToken":true,"hasSnatched":false},{"torrentId":12,"editionId":2,"artists":[{"id":111,"name":"artist111","aliasid":1112}],"remastered":true,"remasterYear":2122,"remasterCatalogueNumber":"","remasterTitle":"","media":"media","encoding":"encoding","format":"format","hasLog":false,"logScore":0,"hasCue":false,"scene":false,"vanityHouse":false,"fileCount":123,"time":"2124-02-06 07:54:25","size":125,"snatches":126,"seeders":127,"leechers":0,"isFreeleech":false,"isNeutralLeech":false,"isPersonalFreeleech":false,"canUseToken":true,"hasSnatched":false}]}]}}`
+	top10JSON        = `{"status":"success","response":[{"caption":"caption1","tag":"tag1","limit":10,"results":[{"torrentId":1,"groupId":2,"artist":"artist1","groupName":"group2","groupCategory":1,"groupYear":2002,"remasterTitle":"","format":"format","encoding":"encoding","hasLog":true,"hasCue":false,"hasLogDB":true,"logScore":"100","logChecksum":"1","media":"media","scene":false,"year":0,"tags":["tag1","tag2","tag3"],"snatched":3,"seeders":4,"leechers":0,"data":5,"size":6,"wikiImage":"wikiimage1","releaseType":"7"},{"torrentId":8,"groupId":9,"artist":"artist8","groupName":"group9","groupCategory":1,"groupYear":2009,"remasterTitle":"title8","format":"format","encoding":"encoding","hasLog":false,"hasCue":true,"hasLogDB":false,"logScore":"100","logChecksum":"1","media":"media","scene":true,"year":2008,"tags":["tag9","tag10"],"snatched":11,"seeders":12,"leechers":13,"data":14,"size":15,"wikiImage":"wikiimage16","releaseType":"17"}]},{"caption":"caption2","tag":"tag2","limit":10,"results":[{"torrentId":18,"groupId":19,"artist":"artist20","groupName":"group21","groupCategory":22,"groupYear":2023,"remasterTitle":"","format":"format24","encoding":"encoding25","hasLog":false,"hasCue":false,"hasLogDB":false,"logScore":"100","logChecksum":"0","media":"media26","scene":false,"year":2027,"tags":["tag28","tag29"],"snatched":30,"seeders":31,"leechers":0,"data":32,"size":33,"wikiImage":"wikiimage34","releaseType":"35"},{"torrentId":36,"groupId":37,"artist":"artist38","groupName":"group39","groupCategory":40,"groupYear":2041,"remasterTitle":"","format":"format42","encoding":"encoding43","hasLog":true,"hasCue":true,"hasLogDB":true,"logScore":"0","logChecksum":"1","media":"media44","scene":true,"year":2045,"tags":[],"snatched":46,"seeders":47,"leechers":0,"data":48,"size":49,"wikiImage":"wikiimage50","releaseType":"51"}]}]}`
 )
 
 func TestArtistUpdate(t *testing.T) {
@@ -3376,6 +3282,252 @@ func TestTrackerSearch(t *testing.T) {
 		if err := TorrentsEqual(expected[i], r[i]); err != nil {
 			t.Errorf("%d: expected %+v got %+v, differs in %s",
 				i, expected[i], r[i], err)
+		}
+	}
+}
+
+func TestNewTopTenTorrents(t *testing.T) {
+	tracker := gazelle.Tracker{Name: "tracker"}
+	tt := whatapi.TopTenTorrents{
+		{
+			Caption: "caption",
+			Tag:     "tag",
+			Limit:   1,
+			Results: []whatapi.TopTenResult{
+				{
+					TorrentID:     1,
+					GroupID:       2,
+					Artist:        "artist",
+					GroupName:     "groupname",
+					GroupCategory: 3,
+					GroupYear:     4,
+					RemasterTitle: "remastertitle",
+					Format:        "format",
+					Encoding:      "encoding",
+					HasLog:        true,
+					HasCue:        false,
+					HasLogDB:      true,
+					LogScore:      "100",
+					LogChecksum:   "0",
+					Media:         "media",
+					Scene:         false,
+					Year:          5,
+					Tags:          []string{"tags"},
+					Snatched:      6,
+					Seeders:       7,
+					Leechers:      8,
+					Data:          9,
+					Size:          10,
+					WikiImage:     "wikiimage",
+					ReleaseType:   "11",
+				},
+			},
+		},
+	}
+	r, err := gazelle.NewTopTenTorrents(tracker, tt)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []gazelle.Torrent{
+		{
+			Group: gazelle.Group{
+				Artists: gazelle.Artists{
+					Tracker: tracker,
+					Artists: map[string][]gazelle.Artist{
+						"Artist": {{0, "artist"}},
+					},
+				},
+				ID:           2,
+				Name:         "groupname",
+				CategoryID:   addrOfInt64(3),
+				Year:         4,
+				Tags:         "tags",
+				WikiImage:    addrOf("wikiimage"),
+				ReleaseTypeF: 11,
+			},
+			ID:            1,
+			RemasterTitle: "remastertitle",
+			Media:         "media",
+			Format:        "format",
+			Encoding:      "encoding",
+			HasLog:        true,
+			HasCue:        false,
+			LogScore:      100,
+			LogChecksum:   addrOfBool(false),
+			Scene:         false,
+			RemasterYear:  5,
+			Snatched:      6,
+			Seeders:       7,
+			Leechers:      8,
+			Size:          10,
+		},
+	}
+	if len(expected) != len(r) {
+		t.Errorf("expected %d results got %d", len(expected), len(r))
+	}
+	for i := range expected {
+		if err := TorrentsEqual(expected[i], r[i]); err != nil {
+			t.Errorf("%d: expected %+v got %+v, differs in %s",
+				i, expected[i], r[i], err)
+		}
+	}
+}
+
+func TestTrackerTop10(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  top10JSON,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{
+		WhatAPI: m,
+		Name:    "tracker",
+	}
+	params := url.Values{}
+	r, err := tracker.Top10(params)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := map[int]gazelle.Torrent{
+		1: {
+			Group: gazelle.Group{
+				Artists: gazelle.Artists{
+					Tracker: tracker,
+					Artists: map[string][]gazelle.Artist{
+						"Artist": {{0, "artist1"}},
+					},
+				},
+				ID:           2,
+				Name:         "group2",
+				CategoryID:   addrOfInt64(1),
+				Year:         2002,
+				Tags:         "tag1,tag2,tag3",
+				WikiImage:    addrOf("wikiimage1"),
+				ReleaseTypeF: 7,
+			},
+			ID:            1,
+			RemasterTitle: "",
+			Media:         "media",
+			Format:        "format",
+			Encoding:      "encoding",
+			HasLog:        true,
+			HasCue:        false,
+			LogScore:      100,
+			LogChecksum:   addrOfBool(true),
+			Scene:         false,
+			RemasterYear:  0,
+			Snatched:      3,
+			Seeders:       4,
+			Leechers:      0,
+			Size:          6,
+		},
+		8: {
+			Group: gazelle.Group{
+				Artists: gazelle.Artists{
+					Tracker: tracker,
+					Artists: map[string][]gazelle.Artist{
+						"Artist": {{0, "artist8"}},
+					},
+				},
+				ID:           9,
+				Name:         "group9",
+				CategoryID:   addrOfInt64(1),
+				Year:         2009,
+				Tags:         "tag9,tag10",
+				WikiImage:    addrOf("wikiimage16"),
+				ReleaseTypeF: 17,
+			},
+			ID:            8,
+			RemasterTitle: "title8",
+			Media:         "media",
+			Format:        "format",
+			Encoding:      "encoding",
+			HasLog:        false,
+			HasCue:        true,
+			LogScore:      100,
+			LogChecksum:   addrOfBool(true),
+			Scene:         true,
+			RemasterYear:  2008,
+			Snatched:      11,
+			Seeders:       12,
+			Leechers:      13,
+			Size:          15,
+		},
+		18: {
+			Group: gazelle.Group{
+				Artists: gazelle.Artists{
+					Tracker: tracker,
+					Artists: map[string][]gazelle.Artist{
+						"Artist": {{0, "artist20"}},
+					},
+				},
+				ID:           19,
+				Name:         "group21",
+				CategoryID:   addrOfInt64(22),
+				Year:         2023,
+				Tags:         "tag28,tag29",
+				WikiImage:    addrOf("wikiimage34"),
+				ReleaseTypeF: 35,
+			},
+			ID:            18,
+			RemasterTitle: "",
+			Media:         "media26",
+			Format:        "format24",
+			Encoding:      "encoding25",
+			HasLog:        false,
+			HasCue:        false,
+			LogScore:      100,
+			LogChecksum:   addrOfBool(false),
+			Scene:         false,
+			RemasterYear:  2027,
+			Snatched:      30,
+			Seeders:       31,
+			Leechers:      0,
+			Size:          33,
+		},
+		36: {
+			Group: gazelle.Group{
+				Artists: gazelle.Artists{
+					Tracker: tracker,
+					Artists: map[string][]gazelle.Artist{
+						"Artist": {{0, "artist38"}},
+					},
+				},
+				ID:           37,
+				Name:         "group39",
+				CategoryID:   addrOfInt64(40),
+				Year:         2041,
+				Tags:         "",
+				WikiImage:    addrOf("wikiimage50"),
+				ReleaseTypeF: 51,
+			},
+			ID:            36,
+			RemasterTitle: "",
+			Media:         "media44",
+			Format:        "format42",
+			Encoding:      "encoding43",
+			HasLog:        true,
+			HasCue:        true,
+			LogScore:      0,
+			LogChecksum:   addrOfBool(true),
+			Scene:         true,
+			RemasterYear:  2045,
+			Snatched:      46,
+			Seeders:       47,
+			Leechers:      0,
+			Size:          49,
+		},
+	}
+	if len(expected) != len(r) {
+		t.Errorf("expected %d results got %d", len(expected), len(r))
+	}
+	for _, rt := range r {
+		e, ok := expected[rt.ID]
+		if !ok {
+			t.Errorf("did not expect a torrent with ID %d", rt.ID)
+		}
+		if err := TorrentsEqual(e, rt); err != nil {
+			t.Errorf("%d: expected %+v got %+v, differs in %s",
+				rt.ID, e, rt, err)
 		}
 	}
 }
