@@ -645,6 +645,10 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 	torrents = []Torrent{}
 	for i, ag := range a.TorrentGroup {
 		al := NewExtendedArtistMap(tracker, ag.ExtendedArtists)
+		categoryID, err := strconv.ParseInt(ag.GroupCategoryID, 10, 64)
+		if err != nil {
+			return torrents, err
+		}
 		g := Group{
 			Artists:         al,
 			ID:              int64(ag.GroupID),
@@ -653,11 +657,11 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 			RecordLabel:     &a.TorrentGroup[i].GroupRecordLabelF,
 			CatalogueNumber: &a.TorrentGroup[i].GroupCatalogueNumberF,
 			ReleaseTypeF:    int64(ag.ReleaseTypeF),
-			// CategoryID
+			CategoryID:      &categoryID,
 			// CategoryName
 			// Time
 			VanityHouse: ag.GroupVanityHouse,
-			// WikiImage:       nil,
+			WikiImage:   &a.TorrentGroup[i].WikiImage,
 			// WikiBody:        nil,
 			IsBookmarked: &a.TorrentGroup[i].HasBookmarked,
 			Tags:         strings.Join(ag.Tags(), ","),

@@ -300,6 +300,12 @@ func (m MockWhatAPI) GetTorrentBookmarks() (T whatapi.TorrentBookmarks, e error)
 }
 func (m MockWhatAPI) GetArtist(id int, params url.Values) (A whatapi.Artist, e error) {
 	m.Called()
+	r := whatapi.ArtistResponse{}
+	e = m.GetJSON(m.JSON, &r)
+	if e != nil {
+		return r.Response, e
+	}
+	return r.Response, checkResponseStatus(r.Status, r.Error)
 	return
 }
 func (m MockWhatAPI) GetRequest(id int, params url.Values) (R whatapi.Request, e error) {
@@ -375,6 +381,237 @@ const (
 	torrentdsmJSON   = `{"status":"success","response":{"group":{"wikiBody":"blah blah","wikiImage":"https:\/\/ptpimg.me\/yh5fqd.jpg","id":1,"name":"The Dark Side of the Moon","year":1973,"recordLabel":"","catalogueNumber":"","releaseType":1,"categoryId":1,"categoryName":"Music","time":"2019-08-28 17:46:53","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"Pink Floyd"}],"with":[],"conductor":[],"remixedBy":[],"producer":[]},"tags":["rock","experimental","progressive.rock","psychedelic","psychedelic.rock","space.rock","classic.rock","hard.rock","1970s","art.rock","british","staff.recs"]},"torrent":{"id":1,"infoHash":"C380B62A3EC6658597C56F45D596E8081B3F7A5C","media":"CD","format":"FLAC","encoding":"Lossless","remastered":true,"remasterYear":1988,"remasterTitle":"Japan MFSL UltraDisc #1, 24 Karat Gold","remasterRecordLabel":"Mobile Fidelity Sound Lab","remasterCatalogueNumber":"UDCD 517","scene":false,"hasLog":true,"hasCue":true,"logScore":70,"fileCount":12,"size":219114079,"seeders":100,"leechers":0,"snatched":414,"freeTorrent":false,"reported":false,"time":"2016-11-24 01:34:03","description":"[important]Staff: Technically trumped because EAC 0.95 logs are terrible. There is historic and sentimental value in keeping the first torrent ever uploaded to the site as well as a perfect modern rip. Take no action.[\/important]","fileList":"01 - Speak to Me.flac{{{3732587}}}|||02 -  Breathe.flac{{{14244409}}}|||03 - On the Run.flac{{{16541873}}}|||04 - Time.flac{{{35907465}}}|||05 -  The Great Gig in the Sky.flac{{{20671913}}}|||06 - Money.flac{{{37956922}}}|||07 -Us and Them.flac{{{39706774}}}|||08 - Any Colour You Like.flac{{{18736396}}}|||09 - Brain Damage.flac{{{20457034}}}|||10 - Eclipse.flac{{{11153655}}}|||Pink Floyd - Dark Side of the Moon.CUE{{{1435}}}|||Pink Floyd - Dark Side of the Moon.log{{{3616}}}","filePath":"Pink Floyd - Dark Side of the Moon (OMR MFSL 24k Gold Ultradisc II) fixed tags","userId":9,"username":"danger"}}}`
 	group2JSONBody   = `{"group":{"wikiBody":"wikibody","wikiImage":"wikiimage","id":2,"name":"name","year":1234,"recordLabel":"label","catalogueNumber":"catalogue","releaseType":1,"categoryId":2,"categoryName":"category","time":"4321-05-06 07:08:09","vanityHouse":false,"isBookmarked":false,"musicInfo":{"composers":[],"dj":[],"artists":[{"id":1,"name":"artist1"},{"id":2,"name":"artist2"}],"with":[{"id":3,"name":"artist3"}],"conductor":[],"remixedBy":[],"producer":[]},"tags":["tag1","tag2"]},"torrents":[` + torrent1JSONBody + `,` + torrent1JSONBody + `]}`
 	group2JSON       = `{"status":"success","response":` + group2JSONBody + `}`
+	artist1JSON      = `{"status":"success","response":` + artist1JSONBody + `}`
+	artist1JSONBody  = `
+{
+  "id": 1,
+  "name": "name",
+  "notificationsEnabled": false,
+  "hasBookmarked": false,
+  "image": "image",
+  "body": "body",
+  "vanityHouse": false,
+  "tags": [{"name": "tag","count": 2}],
+  "similarArtists": [
+    {
+      "artistId": 2,
+      "name": "name2",
+      "score": 99,
+      "similarId": 1
+    }
+  ],
+  "statistics": {
+    "numGroups": 3,
+    "numTorrents": 12,
+    "numSeeders": 68,
+    "numLeechers": 0,
+    "numSnatches": 123
+  },
+  "torrentgroup": [
+    {
+      "groupId": 3,
+      "groupName": "groupname",
+      "groupYear": 2011,
+      "groupRecordLabel": "label",
+      "groupCatalogueNumber": "catalogue",
+      "groupCategoryID": "1",
+      "tags": ["tag1","tag2"],
+      "releaseType": 6,
+      "wikiImage": "wikiimage",
+      "groupVanityHouse": false,
+      "hasBookmarked": false,
+      "artists": [
+	{
+	  "id": 1,
+	  "name": "name",
+	  "aliasid": 2
+	}
+      ],
+      "extendedArtists": {
+	"1": [
+	  {
+	    "id": 1,
+	    "name": "name",
+	    "aliasid": 2
+	  }
+	],
+	"2": [
+	  {
+	    "id": 2,
+	    "name": "name2",
+	    "aliasid": 3
+	  },
+	  {
+	    "id": 3,
+	    "name": "name3",
+	    "aliasid": 4
+	  }
+	],
+	"3": null,
+	"4": null,
+	"5": null,
+	"6": null,
+	"7": null
+      },
+      "torrent": [
+	{
+	  "id": 31,
+	  "groupId": 3,
+	  "media": "media",
+	  "format": "format",
+	  "encoding": "encoding",
+	  "remasterYear": 0,
+	  "remastered": false,
+	  "remasterTitle": "title31",
+	  "remasterRecordLabel": "label31",
+	  "scene": false,
+	  "hasLog": true,
+	  "hasCue": true,
+	  "logScore": 100,
+	  "fileCount": 311,
+	  "freeTorrent": false,
+	  "size": 312,
+	  "leechers": 313,
+	  "seeders": 314,
+	  "snatched": 315,
+	  "time": "0316-12-04 19:02:37",
+	  "hasFile": 317
+	},
+	{
+	  "id": 32,
+	  "groupId": 3,
+	  "media": "media",
+	  "format": "format",
+	  "encoding": "encoding",
+	  "remasterYear": 0,
+	  "remastered": false,
+	  "remasterTitle": "",
+	  "remasterRecordLabel": "",
+	  "scene": false,
+	  "hasLog": false,
+	  "hasCue": false,
+	  "logScore": 0,
+	  "fileCount": 321,
+	  "freeTorrent": false,
+	  "size": 322,
+	  "leechers": 323,
+	  "seeders": 324,
+	  "snatched": 325,
+	  "time": "0326-01-14 23:21:30",
+	  "hasFile": 327
+	},
+	{
+	  "id": 33,
+	  "groupId": 3,
+	  "media": "media",
+	  "format": "format",
+	  "encoding": "encoding",
+	  "remasterYear": 0,
+	  "remastered": false,
+	  "remasterTitle": "",
+	  "remasterRecordLabel": "",
+	  "scene": false,
+	  "hasLog": false,
+	  "hasCue": false,
+	  "logScore": 0,
+	  "fileCount": 331,
+	  "freeTorrent": false,
+	  "size": 332,
+	  "leechers": 0,
+	  "seeders": 333,
+	  "snatched": 334,
+	  "time": "0335-01-14 23:23:01",
+	  "hasFile": 336
+	}
+      ]
+    },
+    {
+      "groupId": 4,
+      "groupName": "group4",
+      "groupYear": 2008,
+      "groupRecordLabel": "label4",
+      "groupCatalogueNumber": "catalog4",
+      "groupCategoryID": "1",
+      "tags": ["tag4"],
+      "releaseType": 7,
+      "wikiImage": "wikiimage4",
+      "groupVanityHouse": false,
+      "hasBookmarked": false,
+      "artists": [
+	{
+	  "id": 41,
+	  "name": "artist41",
+	  "aliasid": 42
+	}
+      ],
+      "extendedArtists": {
+	"1": [
+	  {
+	    "id": 41,
+	    "name": "artist41",
+	    "aliasid": 42 
+	  }
+	],
+	"2": null,
+	"3": null,
+	"4": null,
+	"5": null,
+	"6": null,
+	"7": null
+      },
+      "torrent": [
+	{
+	  "id": 41,
+	  "groupId": 4,
+	  "media": "media",
+	  "format": "format",
+	  "encoding": "encoding",
+	  "remasterYear": 411,
+	  "remastered": true,
+	  "remasterTitle": "",
+	  "remasterRecordLabel": "recordlabel41",
+	  "scene": false,
+	  "hasLog": true,
+	  "hasCue": true,
+	  "logScore": 100,
+	  "fileCount": 411,
+	  "freeTorrent": false,
+	  "size": 412,
+	  "leechers": 0,
+	  "seeders": 413,
+	  "snatched":414,
+	  "time": "0415-11-28 17:15:33",
+	  "hasFile": 416
+	},
+	{
+	  "id": 42,
+	  "groupId": 4,
+	  "media": "media",
+	  "format": "format",
+	  "encoding": "encoding",
+	  "remasterYear": 421,
+	  "remastered": true,
+	  "remasterTitle": "",
+	  "remasterRecordLabel": "label42",
+	  "scene": false,
+	  "hasLog": false,
+	  "hasCue": false,
+	  "logScore": 0,
+	  "fileCount": 422,
+	  "freeTorrent": false,
+	  "size": 423,
+	  "leechers": 0,
+	  "seeders": 424,
+	  "snatched": 425,
+	  "time": "0426-08-14 11:50:18",
+	  "hasFile": 427
+	}
+      ]
+    }
+  ],
+  "requests": []
+}
+`
 )
 
 func TestArtistUpdate(t *testing.T) {
@@ -843,6 +1080,9 @@ func ArtistsEqual(a1, a2 gazelle.Artists) error {
 	}
 	if !reflect.DeepEqual(a1.Tracker, a2.Tracker) {
 		return fmt.Errorf("Tracker")
+	}
+	if len(a1.Artists) != len(a2.Artists) {
+		return fmt.Errorf("len(Artists)")
 	}
 	for i := range a1.Artists {
 		if !reflect.DeepEqual(a1.Artists[i], a2.Artists[i]) {
@@ -1773,10 +2013,12 @@ func TestNewArtist(t *testing.T) {
 				GroupYearF:            4321,
 				GroupRecordLabelF:     "recordlabel2",
 				GroupCatalogueNumberF: "catalogue2",
+				GroupCategoryID:       "2",
 				TagsF:                 []string{"tags21", "tags22"},
 				ReleaseTypeF:          2,
 				GroupVanityHouse:      true,
 				HasBookmarked:         true,
+				WikiImage:             "wikiimage2",
 				Torrent: []whatapi.ArtistTorrentStruct{
 					{
 						IDF:                  21,
@@ -1845,10 +2087,12 @@ func TestNewArtist(t *testing.T) {
 				GroupYearF:            5432,
 				GroupRecordLabelF:     "recordlabel3",
 				GroupCatalogueNumberF: "catalogue3",
+				GroupCategoryID:       "3",
 				TagsF:                 []string{"tags31", "tags32"},
 				ReleaseTypeF:          3,
 				GroupVanityHouse:      false,
 				HasBookmarked:         false,
+				WikiImage:             "wikiimage3",
 				Torrent: []whatapi.ArtistTorrentStruct{
 					{
 						IDF:                  31,
@@ -1940,11 +2184,11 @@ func TestNewArtist(t *testing.T) {
 		RecordLabel:     addrOf("recordlabel2"),
 		CatalogueNumber: addrOf("catalogue2"),
 		ReleaseTypeF:    2,
-		CategoryID:      nil,
+		CategoryID:      addrOfInt64(2),
 		CategoryName:    nil,
 		Time:            nil,
 		VanityHouse:     true,
-		WikiImage:       nil,
+		WikiImage:       addrOf("wikiimage2"),
 		WikiBody:        nil,
 		IsBookmarked:    addrOfBool(true),
 		Tags:            "tags21,tags22",
@@ -1957,11 +2201,11 @@ func TestNewArtist(t *testing.T) {
 		RecordLabel:     addrOf("recordlabel3"),
 		CatalogueNumber: addrOf("catalogue3"),
 		ReleaseTypeF:    3,
-		CategoryID:      nil,
+		CategoryID:      addrOfInt64(3),
 		CategoryName:    nil,
 		Time:            nil,
 		VanityHouse:     false,
-		WikiImage:       nil,
+		WikiImage:       addrOf("wikiimage3"),
 		WikiBody:        nil,
 		IsBookmarked:    addrOfBool(false),
 		Tags:            "tags31,tags32",
@@ -2061,7 +2305,7 @@ func TestNewArtist(t *testing.T) {
 	}
 	for i := range r {
 		if err := TorrentsEqual(expected[i], r[i]); err != nil {
-			t.Errorf("%d: expected %v got %v, differ in %s",
+			t.Errorf("%d: expected %+v got %+v, differ in %s",
 				i, expected[i], r[i], err)
 		}
 	}
@@ -2514,6 +2758,35 @@ var (
 		IsBookmarked:    addrOfBool(true),
 		Tags:            "tag1,tag2",
 	}
+	gtime2     = time.Date(4321, 5, 6, 7, 8, 9, 0, time.UTC)
+	jsonGroup2 = gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: expectTracker,
+			Artists: map[string][]gazelle.Artist{
+				"Artist":    {{1, "artist1"}, {2, "artist2"}},
+				"Composer":  {},
+				"Conductor": {},
+				"DJ":        {},
+				"Producer":  {},
+				"RemixedBy": {},
+				"With":      {{3, "artist3"}},
+			},
+		},
+		ID:              2,
+		Name:            "name",
+		Year:            1234,
+		RecordLabel:     addrOf("label"),
+		CatalogueNumber: addrOf("catalogue"),
+		ReleaseTypeF:    1,
+		CategoryID:      addrOfInt64(2),
+		CategoryName:    addrOf("category"),
+		Time:            &gtime2,
+		VanityHouse:     false,
+		IsBookmarked:    addrOfBool(false),
+		Tags:            "tag1,tag2",
+		WikiImage:       addrOf("wikiimage"),
+		WikiBody:        addrOf("wikibody"),
+	}
 	jsonTorrent = gazelle.Torrent{
 		Group:                   jsonGroup,
 		ID:                      1,
@@ -2667,35 +2940,8 @@ func TestTrackerGetGroup(t *testing.T) {
 		t.Error(err)
 	}
 	to := jsonTorrent
-	ti := time.Date(4321, 5, 6, 7, 8, 9, 0, time.UTC)
-	to.Group = gazelle.Group{
-		Artists: gazelle.Artists{
-			Tracker: tracker,
-			Artists: map[string][]gazelle.Artist{
-				"Artist":    {{1, "artist1"}, {2, "artist2"}},
-				"Composer":  {},
-				"Conductor": {},
-				"DJ":        {},
-				"Producer":  {},
-				"RemixedBy": {},
-				"With":      {{3, "artist3"}},
-			},
-		},
-		ID:              2,
-		Name:            "name",
-		Year:            1234,
-		RecordLabel:     addrOf("label"),
-		CatalogueNumber: addrOf("catalogue"),
-		ReleaseTypeF:    1,
-		CategoryID:      addrOfInt64(2),
-		CategoryName:    addrOf("category"),
-		Time:            &ti,
-		VanityHouse:     false,
-		IsBookmarked:    addrOfBool(false),
-		Tags:            "tag1,tag2",
-		WikiImage:       addrOf("wikiimage"),
-		WikiBody:        addrOf("wikibody"),
-	}
+	to.Group = jsonGroup2
+	to.Tracker = tracker
 	expected := []gazelle.Torrent{
 		to,
 		to,
@@ -2707,6 +2953,248 @@ func TestTrackerGetGroup(t *testing.T) {
 		if err := TorrentsEqual(expected[i], r[i]); err != nil {
 			t.Errorf("%d: expected %v got %v, differs in %s",
 				i, expected[i], r[i], err)
+		}
+	}
+}
+
+func TestTrackerGetGroupByHash_BadHash(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  `{"status":"failure","error":"bad hash parameter"}`,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{
+		WhatAPI: m,
+		Name:    "tracker",
+	}
+	_, err := tracker.GetGroupByHash("hash")
+	if err == nil {
+		t.Errorf("expected error bad hash parameter, but got nil")
+	}
+	if !strings.Contains(err.Error(), "bad hash parameter") {
+		t.Errorf("expected error bad hash parameter, but got %v", err)
+	}
+	if !m.Contains("GetJSON") {
+		t.Errorf("expected to fetch JSON")
+	}
+}
+
+func TestTrackerGetGroupByHash(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  group2JSON,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{
+		WhatAPI: m,
+		Name:    "tracker",
+	}
+	r, err := tracker.GetGroupByHash("hash")
+	if err != nil {
+		t.Error(err)
+	}
+	to := jsonTorrent
+	to.Group = jsonGroup2
+	to.Tracker = tracker
+	expected := []gazelle.Torrent{
+		to,
+		to,
+	}
+	if len(expected) != len(r) {
+		t.Errorf("expected %d results got %d", len(expected), len(r))
+	}
+	for i := range expected {
+		if err := TorrentsEqual(expected[i], r[i]); err != nil {
+			t.Errorf("%d: expected %v got %v, differs in %s",
+				i, expected[i], r[i], err)
+		}
+	}
+}
+
+func TestTrackerGetArtist(t *testing.T) {
+	m := MockWhatAPI{
+		JSON:  artist1JSON,
+		Calls: &[]string{},
+	}
+	tracker := gazelle.Tracker{
+		WhatAPI: m,
+		Name:    "tracker",
+	}
+	r, err := tracker.GetArtist(1)
+	if err != nil {
+		t.Error(err)
+	}
+	g3 := gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: tracker,
+			Artists: map[string][]gazelle.Artist{
+				"Artist":    {{1, "name"}},
+				"With":      {{2, "name2"}, {3, "name3"}},
+				"Composer":  {},
+				"DJ":        {},
+				"Conductor": {},
+				"RemixedBy": {},
+				"Producer":  {},
+			},
+		},
+		ID:              3,
+		Name:            "groupname",
+		Year:            2011,
+		RecordLabel:     addrOf("label"),
+		CatalogueNumber: addrOf("catalogue"),
+		CategoryID:      addrOfInt64(1),
+		Tags:            "tag1,tag2",
+		ReleaseTypeF:    6,
+		WikiImage:       addrOf("wikiimage"),
+		VanityHouse:     false,
+		IsBookmarked:    addrOfBool(false),
+	}
+	g4 := gazelle.Group{
+		Artists: gazelle.Artists{
+			Tracker: tracker,
+			Artists: map[string][]gazelle.Artist{
+				"Artist":    {{41, "artist41"}},
+				"Composer":  {},
+				"DJ":        {},
+				"With":      {},
+				"Conductor": {},
+				"RemixedBy": {},
+				"Producer":  {},
+			},
+		},
+		ID:              4,
+		Name:            "group4",
+		Year:            2008,
+		RecordLabel:     addrOf("label4"),
+		CatalogueNumber: addrOf("catalog4"),
+		CategoryID:      addrOfInt64(1),
+		Tags:            "tag4",
+		ReleaseTypeF:    7,
+		WikiImage:       addrOf("wikiimage4"),
+		VanityHouse:     false,
+		IsBookmarked:    addrOfBool(false),
+	}
+	expected := []gazelle.Torrent{
+		{
+			Group:               g3,
+			ID:                  31,
+			Media:               "media",
+			Format:              "format",
+			Encoding:            "encoding",
+			RemasterYear:        0,
+			Remastered:          false,
+			RemasterTitle:       "title31",
+			RemasterRecordLabel: "label31",
+			Scene:               false,
+			HasLog:              true,
+			HasCue:              true,
+			LogScore:            100,
+			FileCount:           311,
+			FreeTorrent:         false,
+			Size:                312,
+			Leechers:            313,
+			Seeders:             314,
+			Snatched:            315,
+			Time:                time.Date(316, 12, 4, 19, 2, 37, 0, time.UTC),
+		},
+		{
+			Group:               g3,
+			ID:                  32,
+			Media:               "media",
+			Format:              "format",
+			Encoding:            "encoding",
+			RemasterYear:        0,
+			Remastered:          false,
+			RemasterTitle:       "",
+			RemasterRecordLabel: "",
+			Scene:               false,
+			HasLog:              false,
+			HasCue:              false,
+			LogScore:            0,
+			FileCount:           321,
+			FreeTorrent:         false,
+			Size:                322,
+			Leechers:            323,
+			Seeders:             324,
+			Snatched:            325,
+			Time:                time.Date(326, 1, 14, 23, 21, 30, 0, time.UTC),
+		},
+		{
+			Group:               g3,
+			ID:                  33,
+			Media:               "media",
+			Format:              "format",
+			Encoding:            "encoding",
+			RemasterYear:        0,
+			Remastered:          false,
+			RemasterTitle:       "",
+			RemasterRecordLabel: "",
+			Scene:               false,
+			HasLog:              false,
+			HasCue:              false,
+			LogScore:            0,
+			FileCount:           331,
+			FreeTorrent:         false,
+			Size:                332,
+			Leechers:            0,
+			Seeders:             333,
+			Snatched:            334,
+			Time:                time.Date(335, 1, 14, 23, 23, 1, 0, time.UTC),
+		},
+		{
+			Group:               g4,
+			ID:                  41,
+			Media:               "media",
+			Format:              "format",
+			Encoding:            "encoding",
+			RemasterYear:        411,
+			Remastered:          true,
+			RemasterTitle:       "",
+			RemasterRecordLabel: "recordlabel41",
+			Scene:               false,
+			HasLog:              true,
+			HasCue:              true,
+			LogScore:            100,
+			FileCount:           411,
+			FreeTorrent:         false,
+			Size:                412,
+			Leechers:            0,
+			Seeders:             413,
+			Snatched:            414,
+			Time:                time.Date(415, 11, 28, 17, 15, 33, 0, time.UTC),
+		},
+		{
+			Group:               g4,
+			ID:                  42,
+			Media:               "media",
+			Format:              "format",
+			Encoding:            "encoding",
+			RemasterYear:        421,
+			Remastered:          true,
+			RemasterTitle:       "",
+			RemasterRecordLabel: "label42",
+			Scene:               false,
+			HasLog:              false,
+			HasCue:              false,
+			LogScore:            0,
+			FileCount:           422,
+			FreeTorrent:         false,
+			Size:                423,
+			Leechers:            0,
+			Seeders:             424,
+			Snatched:            425,
+			Time:                time.Date(426, 8, 14, 11, 50, 18, 0, time.UTC),
+		},
+	}
+	if len(expected) != len(r) {
+		t.Errorf("expected %d results got %d", len(expected), len(r))
+	}
+	for i := range expected {
+		t1 := expected[i]
+		t1.Tracker.WhatAPI = nil
+		t2 := r[i]
+		t2.Tracker.WhatAPI = nil
+		if err := TorrentsEqual(expected[i], r[i]); err != nil {
+			t.Errorf("%d: expected %+v got %+v, differs in %s",
+				i, t1, t2, err)
 		}
 	}
 }
