@@ -610,7 +610,7 @@ func NewSearchTorrentStruct(g Group, rt whatapi.SearchTorrentStruct) (Torrent, e
 		Size:                    rt.Size,
 		Seeders:                 int64(rt.Seeders),
 		Leechers:                int64(rt.Leechers),
-		// Snatched:                0,
+		Snatched:                int64(rt.Snatches),
 		// FreeTorrent:             false,
 		// Reported:                nil,
 		Time: tTime,
