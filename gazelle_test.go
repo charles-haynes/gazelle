@@ -1006,7 +1006,10 @@ func TorrentsEqual(t1, t2 gazelle.Torrent) error {
 	if !reflect.DeepEqual(t1.Files, t2.Files) {
 		return fmt.Errorf("Files")
 	}
-	return fmt.Errorf("unknown, did you leave out a field in GroupEqual?")
+	if !reflect.DeepEqual(t1.CanUseToken, t2.CanUseToken) {
+		return fmt.Errorf("CanUseToken")
+	}
+	return fmt.Errorf("unknown, did you leave out a field in TorrentEqual?")
 }
 
 var (
@@ -1532,6 +1535,7 @@ func TestNewSearchTorrentStruct_EmptySearchTorrentStruct(t *testing.T) {
 	expected := gazelle.Torrent{
 		RemasterCatalogueNumber: addrOf(""),
 		Time:                    gtime,
+		CanUseToken:             addrOfBool(false),
 	}
 	if err := TorrentsEqual(expected, r); err != nil {
 		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
@@ -1561,6 +1565,7 @@ func TestNewSearchTorrentStruct(t *testing.T) {
 		Leechers:                 6,
 		Snatches:                 7,
 		Time:                     "1234-05-06 07:08:09",
+		CanUseToken:              true,
 	}
 	r, err := gazelle.NewSearchTorrentStruct(g, rt)
 	if err != nil {
@@ -1587,6 +1592,7 @@ func TestNewSearchTorrentStruct(t *testing.T) {
 		Leechers:                6,
 		Snatched:                7,
 		Time:                    gtime,
+		CanUseToken:             addrOfBool(true),
 	}
 	if err := TorrentsEqual(expected, r); err != nil {
 		t.Errorf("expected %v got %v, differ in %s", expected, r, err)
@@ -1635,6 +1641,7 @@ func TestNewTorrentSearch(t *testing.T) {
 						Leechers:                 6,
 						Snatches:                 7,
 						Time:                     "1234-05-06 07:08:09",
+						CanUseToken:              true,
 					},
 					{
 						TorrentID: 3,
@@ -1660,6 +1667,7 @@ func TestNewTorrentSearch(t *testing.T) {
 						Leechers:                 6,
 						Snatches:                 7,
 						Time:                     "1234-05-06 07:08:09",
+						CanUseToken:              false,
 					},
 				},
 				GroupID:      3,
@@ -1682,7 +1690,7 @@ func TestNewTorrentSearch(t *testing.T) {
 						Name: "tracker",
 					},
 					Artists: map[string][]gazelle.Artist{
-						"Artist": []gazelle.Artist{
+						"Artist": {
 							{1, "artist1"},
 							{2, "artist2"},
 						},
@@ -1711,6 +1719,7 @@ func TestNewTorrentSearch(t *testing.T) {
 			Leechers:                6,
 			Snatched:                7,
 			Time:                    gtime,
+			CanUseToken:             addrOfBool(true),
 		},
 		{
 			Group: gazelle.Group{
@@ -1719,7 +1728,7 @@ func TestNewTorrentSearch(t *testing.T) {
 						Name: "tracker",
 					},
 					Artists: map[string][]gazelle.Artist{
-						"Artist": []gazelle.Artist{
+						"Artist": {
 							{1, "artist1"},
 							{2, "artist2"},
 						},
@@ -1748,6 +1757,7 @@ func TestNewTorrentSearch(t *testing.T) {
 			Leechers:                6,
 			Snatched:                7,
 			Time:                    gtime,
+			CanUseToken:             addrOfBool(false),
 		},
 	}
 	if len(expected) != len(r) {
@@ -2437,13 +2447,13 @@ func TestNewGetTorrentStruct_Empty(t *testing.T) {
 			Artists: gazelle.Artists{
 				Tracker: expectTracker,
 				Artists: map[string][]gazelle.Artist{
-					"Composer":  []gazelle.Artist{},
-					"DJ":        []gazelle.Artist{},
-					"Artist":    []gazelle.Artist{},
-					"With":      []gazelle.Artist{},
-					"Conductor": []gazelle.Artist{},
-					"RemixedBy": []gazelle.Artist{},
-					"Producer":  []gazelle.Artist{},
+					"Composer":  {},
+					"DJ":        {},
+					"Artist":    {},
+					"With":      {},
+					"Conductor": {},
+					"RemixedBy": {},
+					"Producer":  {},
 				},
 			},
 			RecordLabel:     addrOf(""),
@@ -2511,13 +2521,13 @@ var (
 		Artists: gazelle.Artists{
 			Tracker: expectTracker,
 			Artists: map[string][]gazelle.Artist{
-				"Artist":    []gazelle.Artist{{ID: 1, Name: "artist1"}, {ID: 2, Name: "artist2"}},
-				"Composer":  []gazelle.Artist{},
-				"Conductor": []gazelle.Artist{},
-				"DJ":        []gazelle.Artist{},
-				"Producer":  []gazelle.Artist{},
-				"RemixedBy": []gazelle.Artist{},
-				"With":      []gazelle.Artist{{ID: 3, Name: "artist3"}},
+				"Artist":    {{ID: 1, Name: "artist1"}, {ID: 2, Name: "artist2"}},
+				"Composer":  {},
+				"Conductor": {},
+				"DJ":        {},
+				"Producer":  {},
+				"RemixedBy": {},
+				"With":      {{ID: 3, Name: "artist3"}},
 			},
 		},
 		ID:              2,
@@ -3251,6 +3261,7 @@ func TestTrackerSearch(t *testing.T) {
 			Snatched:                115,
 			FreeTorrent:             false,
 			Time:                    time.Date(2113, 12, 17, 1, 33, 21, 0, time.UTC),
+			CanUseToken:             addrOfBool(true),
 		},
 		{
 			Group:                   g,
@@ -3273,6 +3284,7 @@ func TestTrackerSearch(t *testing.T) {
 			Snatched:                126,
 			FreeTorrent:             false,
 			Time:                    time.Date(2124, 2, 6, 7, 54, 25, 0, time.UTC),
+			CanUseToken:             addrOfBool(true),
 		},
 	}
 	if len(expected) != len(r) {

@@ -30,9 +30,9 @@ import (
 
 	"github.com/charles-haynes/whatapi"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
 )
 
+// Tracker represents a gazelle tracker and implements the WhatAPI interface
 type Tracker struct {
 	whatapi.WhatAPI
 	Name            string `db:"tracker"`
@@ -48,11 +48,13 @@ type Tracker struct {
 	updatedTorrents map[int]struct{}
 }
 
+// Artist is a single gazelle artist
 type Artist struct {
 	ID   int64  `db:"id"`
 	Name string `db:"name"`
 }
 
+// Update artist stores the artist in the db
 func (a Artist) Update(tx *sqlx.Tx, tracker Tracker) error {
 	if tracker.updatedArtists == nil {
 		tracker.updatedArtists = map[int64]struct{}{}
@@ -70,11 +72,14 @@ func (a Artist) Update(tx *sqlx.Tx, tracker Tracker) error {
 	return nil
 }
 
+// Artists is a tracker and a set of artists and their roles
+// usually associated with a group
 type Artists struct {
 	Tracker
 	Artists map[string][]Artist
 }
 
+// Names returns a list of the main artists names from an artist list
 func (a Artists) Names() []string {
 	s := make([]string, len(a.Artists["Artist"]))
 	for i, a := range a.Artists["Artist"] {
@@ -83,6 +88,8 @@ func (a Artists) Names() []string {
 	return s
 }
 
+// GetArtists gets all of the artists for a torrent. Usually used when initially
+// populating a torrent (and should probably just be part of get torrent)
 func (t *Torrent) GetArtists(db *sqlx.DB) error {
 	var artists []struct {
 		ID   int64  `db:"id"`
@@ -107,6 +114,9 @@ WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID)
 	return nil
 }
 
+// Display name for artists is the human readable string formatting of the
+// artists, intended to replicate the internal gazelle logic for formatting
+// artist names
 func (a Artists) DisplayName() string {
 	switch len(a.Artists["Artist"]) {
 	case 0:
@@ -121,6 +131,7 @@ func (a Artists) DisplayName() string {
 	}
 }
 
+// Update artists just updates each artist in the aggregate
 func (a Artists) Update(tx *sqlx.Tx) error {
 	for _, ar := range a.Artists {
 		for _, as := range ar {
@@ -132,6 +143,7 @@ func (a Artists) Update(tx *sqlx.Tx) error {
 	return nil
 }
 
+// NewMusicInfo creates Artists from a tracker and whatapi.MusicInfo struct
 func NewMusicInfo(tracker Tracker, mi whatapi.MusicInfo) Artists {
 	artists := map[string][]Artist{}
 	artists["Composer"] = make([]Artist, len(mi.Composers))
@@ -185,6 +197,7 @@ var roles = map[string]string{
 	"Producer":  "Producer",
 }
 
+// NewExtendedArtistMap creates Artists from a tracker and a whatapi.ExtendedArtistMap
 func NewExtendedArtistMap(tracker Tracker, am whatapi.ExtendedArtistMap) Artists {
 	a := map[string][]Artist{}
 	for r, m := range am {
@@ -254,6 +267,7 @@ type Torrent struct {
 	UserID                  *int      `db:"userid"`
 	Username                *string   `db:"username"`
 	Files                   []whatapi.FileStruct
+	CanUseToken             *bool `db:"canusetoken"`
 }
 
 func (t Torrent) ShortName() string {
@@ -611,7 +625,7 @@ func NewSearchTorrentStruct(g Group, rt whatapi.SearchTorrentStruct) (Torrent, e
 		Seeders:                 int64(rt.Seeders),
 		Leechers:                int64(rt.Leechers),
 		Snatched:                int64(rt.Snatches),
-		// FreeTorrent:             false,
+		FreeTorrent:             rt.IsFreeleech || rt.IsPersonalFreeleech,
 		// Reported:                nil,
 		Time: tTime,
 		// Description:             nil,
@@ -619,6 +633,7 @@ func NewSearchTorrentStruct(g Group, rt whatapi.SearchTorrentStruct) (Torrent, e
 		// UserID:                  nil,
 		// Username:                nil,
 		// Files:                   nil,
+		CanUseToken: &rt.CanUseToken,
 	}, nil
 }
 
@@ -712,13 +727,13 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 	return torrents, err
 }
 
-func (src Torrent) UpdateCross(tx *sqlx.Tx, dst Torrent) error {
+func (t Torrent) UpdateCross(tx *sqlx.Tx, dst Torrent) error {
 	if dst.ID == 0 {
 		_, err := tx.Exec(`
 INSERT INTO crosses
 VALUES(?,?,NULL,NULL,datetime("now"))
 ON CONFLICT (tracker, torrentid) DO NOTHING`,
-			src.Tracker.Name, src.ID)
+			t.Tracker.Name, t.ID)
 		return err
 	}
 	_, err := tx.Exec(`
@@ -730,8 +745,8 @@ ON CONFLICT (tracker, torrentid) DO UPDATE SET
 other = excluded.other,
 otherid = excluded.otherid,
 time=excluded.time`,
-		src.Tracker.Name, src.ID, dst.Tracker.Name, dst.ID,
-		dst.Tracker.Name, dst.ID, src.Tracker.Name, src.ID)
+		t.Tracker.Name, t.ID, dst.Tracker.Name, dst.ID,
+		dst.Tracker.Name, dst.ID, t.Tracker.Name, t.ID)
 	return err
 }
 
