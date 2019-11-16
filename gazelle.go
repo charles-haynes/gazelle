@@ -239,26 +239,27 @@ func (g Group) ReleaseType() string {
 
 type Torrent struct {
 	Group
-	ID                      int       `db:"id"`
-	Hash                    *string   `db:"hash"`
-	Media                   string    `db:"media"`
-	Format                  string    `db:"format"`
-	Encoding                string    `db:"encoding"`
-	Remastered              bool      `db:"remastered"`
-	RemasterYear            int64     `db:"remasteryear"`
+	ID         int     `db:"id"`
+	Hash       *string `db:"hash"`
+	Media      string  `db:"media"`
+	Format     string  `db:"format"`
+	Encoding   string  `db:"encoding"`
+	Remastered bool    `db:"remastered"`
+
+	RemasterYear            int       `db:"remasteryear"`
 	RemasterTitle           string    `db:"remastertitle"`
 	RemasterRecordLabel     string    `db:"remasterlabel"`
 	RemasterCatalogueNumber *string   `db:"cataloguenumber"`
 	Scene                   bool      `db:"scene"`
 	HasLog                  bool      `db:"haslog"`
 	HasCue                  bool      `db:"hascue"`
-	LogScore                int64     `db:"logscore"`
+	LogScore                int       `db:"logscore"`
 	LogChecksum             *bool     `db:"logchecksum"`
-	FileCount               int64     `db:"filecount"`
+	FileCount               int       `db:"filecount"`
 	Size                    int64     `db:"size"`
-	Seeders                 int64     `db:"seeders"`
-	Leechers                int64     `db:"leechers"`
-	Snatched                int64     `db:"snatched"`
+	Seeders                 int       `db:"seeders"`
+	Leechers                int       `db:"leechers"`
+	Snatched                int       `db:"snatched"`
 	FreeTorrent             bool      `db:"freetorrent"`
 	Reported                *bool     `db:"reported"`
 	Time                    time.Time `db:"time"`
@@ -508,7 +509,7 @@ WHERE tracker=? AND torrentid=?`, t.Tracker.Name, t.ID)
 	if err != nil {
 		return err
 	}
-	if int64(len(f)) == t.FileCount {
+	if len(f) == t.FileCount {
 		t.Files = f
 		return nil
 	}
@@ -616,19 +617,19 @@ func NewSearchTorrentStruct(g Group, rt whatapi.SearchTorrentStruct) (Torrent, e
 		Format:        rt.Format(),
 		Encoding:      rt.Encoding(),
 		Remastered:    rt.Remastered(),
-		RemasterYear:  int64(rt.RemasterYear()),
+		RemasterYear:  rt.RemasterYear(),
 		RemasterTitle: rt.RemasterTitle(),
 		// RemasterRecordLabel:     "",
 		RemasterCatalogueNumber: &rt.RemasterCatalogueNumberF,
 		Scene:                   rt.Scene(),
 		HasLog:                  rt.HasLog(),
 		HasCue:                  rt.HasCue,
-		LogScore:                int64(rt.LogScore),
-		FileCount:               int64(rt.FileCount()),
+		LogScore:                rt.LogScore,
+		FileCount:               rt.FileCount(),
 		Size:                    rt.Size,
-		Seeders:                 int64(rt.Seeders),
-		Leechers:                int64(rt.Leechers),
-		Snatched:                int64(rt.Snatches),
+		Seeders:                 rt.Seeders,
+		Leechers:                rt.Leechers,
+		Snatched:                rt.Snatches,
 		FreeTorrent:             rt.IsFreeleech || rt.IsPersonalFreeleech,
 		// Reported:                nil,
 		Time: tTime,
@@ -704,19 +705,19 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 				Format:              rt.Format(),
 				Encoding:            rt.Encoding(),
 				Remastered:          rt.Remastered(),
-				RemasterYear:        int64(rt.RemasterYear()),
+				RemasterYear:        rt.RemasterYear(),
 				RemasterTitle:       rt.RemasterTitle(),
 				RemasterRecordLabel: rt.RemasterRecordLabel(),
 				// RemasterCatalogueNumber: nil,
 				Scene:       rt.Scene(),
 				HasLog:      rt.HasLog(),
 				HasCue:      rt.HasCue,
-				LogScore:    int64(rt.LogScore),
-				FileCount:   int64(rt.FileCount()),
+				LogScore:    rt.LogScore,
+				FileCount:   rt.FileCount(),
 				Size:        rt.Size,
-				Seeders:     int64(rt.Seeders),
-				Leechers:    int64(rt.Leechers),
-				Snatched:    int64(rt.Snatched),
+				Seeders:     rt.Seeders,
+				Leechers:    rt.Leechers,
+				Snatched:    rt.Snatched,
 				FreeTorrent: rt.FreeTorrent,
 				// Reported:    nil,
 				Time: tTime,
@@ -771,19 +772,19 @@ func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
 		Format:                  t.Format(),
 		Encoding:                t.Encoding(),
 		Remastered:              t.Remastered(),
-		RemasterYear:            int64(t.RemasterYear()),
+		RemasterYear:            t.RemasterYear(),
 		RemasterTitle:           t.RemasterTitle(),
 		RemasterRecordLabel:     t.RemasterRecordLabel(),
 		RemasterCatalogueNumber: &t.RemasterCatalogueNumberF,
 		Scene:                   t.Scene(),
 		HasLog:                  t.HasLog(),
 		HasCue:                  t.HasCue,
-		LogScore:                int64(t.LogScore),
-		FileCount:               int64(t.FileCount()),
+		LogScore:                t.LogScore,
+		FileCount:               t.FileCount(),
 		Size:                    t.Size,
-		Seeders:                 int64(t.Seeders),
-		Leechers:                int64(t.Leechers),
-		Snatched:                int64(t.Snatched),
+		Seeders:                 t.Seeders,
+		Leechers:                t.Leechers,
+		Snatched:                t.Snatched,
 		FreeTorrent:             t.FreeTorrent,
 		Reported:                &t.Reported,
 		Time:                    ttime,
@@ -924,20 +925,20 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 				Format:   r.Format,
 				Encoding: r.Encoding,
 				// Remastered
-				RemasterYear:  int64(r.Year),
+				RemasterYear:  r.Year,
 				RemasterTitle: html.UnescapeString(r.RemasterTitle),
 				// RemasterRecordLabel
 				// RemasterCatalogueNumber
 				Scene:       r.Scene,
 				HasLog:      r.HasLog,
 				HasCue:      r.HasCue,
-				LogScore:    int64(logScore),
+				LogScore:    logScore,
 				LogChecksum: &logChecksum,
 				// FileCount
 				Size:     r.Size,
-				Seeders:  int64(r.Seeders),
-				Leechers: int64(r.Leechers),
-				Snatched: int64(r.Snatched),
+				Seeders:  r.Seeders,
+				Leechers: r.Leechers,
+				Snatched: r.Snatched,
 				// FreeTorrent
 				// Reported
 				// Time
