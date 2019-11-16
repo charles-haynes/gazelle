@@ -581,7 +581,7 @@ func TestTorrentShortName(t *testing.T) {
 	}
 }
 
-func TestTorrentFill_BadTorrentID(t *testing.T) {
+func TestTorrentFillBadTorrentID(t *testing.T) {
 	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -614,7 +614,7 @@ func TestTorrentFill_BadTorrentID(t *testing.T) {
 	}
 }
 
-func TestTorrentFill_AlreadyFilled(t *testing.T) {
+func TestTorrentFillAlreadyFilled(t *testing.T) {
 	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -649,7 +649,7 @@ func TestTorrentFill_AlreadyFilled(t *testing.T) {
 	}
 }
 
-func TestTorrentFill_NeedsFilling(t *testing.T) {
+func TestTorrentFillNeedsFilling(t *testing.T) {
 	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -690,7 +690,7 @@ func TestTorrentFill_NeedsFilling(t *testing.T) {
 	}
 }
 
-func TestGroupUpdateArtistsGroups_NoArtists(t *testing.T) {
+func TestGroupUpdateArtistsGroupsNoArtists(t *testing.T) {
 	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -1248,7 +1248,7 @@ func TestTorrentUpdate(t *testing.T) {
 	}
 }
 
-func TestTorrentGetFiles_AlreadyFilled(t *testing.T) {
+func TestTorrentGetFilesAlreadyFilled(t *testing.T) {
 	db := NewTestDB()
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
@@ -1285,7 +1285,7 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 2);
 	}
 }
 
-func TestTorrentGetFiles_FromDB(t *testing.T) {
+func TestTorrentGetFilesFromDB(t *testing.T) {
 	db := NewTestDB()
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
@@ -1321,7 +1321,7 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 	}
 }
 
-func TestTorrentGetFiles_FromAPI(t *testing.T) {
+func TestTorrentGetFilesFromAPI(t *testing.T) {
 	db := NewTestDB()
 	m := MockWhatAPI{
 		JSON:  group2JSON,
@@ -1358,7 +1358,7 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 	}
 }
 
-func TestTorrentString_NotRemastered(t *testing.T) {
+func TestTorrentStringNotRemastered(t *testing.T) {
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
@@ -1393,7 +1393,7 @@ func TestTorrentString_NotRemastered(t *testing.T) {
 	}
 }
 
-func TestTorrentString_Remastered(t *testing.T) {
+func TestTorrentStringRemastered(t *testing.T) {
 	to := gazelle.Torrent{
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
@@ -1459,7 +1459,7 @@ func TestNullableBInt(t *testing.T) {
 	}
 }
 
-func TestNewGroupSearchResult_NoTorrents(t *testing.T) {
+func TestNewGroupSearchResultNoTorrents(t *testing.T) {
 	tracker := gazelle.Tracker{}
 	srs := whatapi.TorrentSearchResultStruct{}
 	_, err := gazelle.NewGroupSearchResult(tracker, srs)
@@ -1468,7 +1468,7 @@ func TestNewGroupSearchResult_NoTorrents(t *testing.T) {
 	}
 }
 
-func TestNewGroupSearchResult_EmptyTorrents(t *testing.T) {
+func TestNewGroupSearchResultEmptyTorrents(t *testing.T) {
 	tracker := gazelle.Tracker{}
 	srs := whatapi.TorrentSearchResultStruct{
 		Torrents: []whatapi.SearchTorrentStruct{
@@ -1489,7 +1489,7 @@ func TestNewGroupSearchResult_EmptyTorrents(t *testing.T) {
 	}
 }
 
-func TestNewGroupSearchResult_NonEmptyTorrents(t *testing.T) {
+func TestNewGroupSearchResultNonEmptyTorrents(t *testing.T) {
 	tracker := gazelle.Tracker{}
 	srs := whatapi.TorrentSearchResultStruct{
 		Torrents: []whatapi.SearchTorrentStruct{
@@ -1525,7 +1525,7 @@ func TestNewGroupSearchResult_NonEmptyTorrents(t *testing.T) {
 	}
 }
 
-func TestNewSearchTorrentStruct_EmptySearchTorrentStruct(t *testing.T) {
+func TestNewSearchTorrentStructEmptySearchTorrentStruct(t *testing.T) {
 	g := gazelle.Group{}
 	rt := whatapi.SearchTorrentStruct{
 		Time: "1234-05-06 07:08:09",
@@ -1601,7 +1601,7 @@ func TestNewSearchTorrentStruct(t *testing.T) {
 	}
 }
 
-func TestNewTorrentSearch_EmptyTorrentSearch(t *testing.T) {
+func TestNewTorrentSearchEmptyTorrentSearch(t *testing.T) {
 	tracker := gazelle.Tracker{}
 	ts := whatapi.TorrentSearch{}
 	r, err := gazelle.NewTorrentSearch(tracker, ts)
@@ -1773,7 +1773,7 @@ func TestNewTorrentSearch(t *testing.T) {
 	}
 }
 
-func TestNewArtist_Empty(t *testing.T) {
+func TestNewArtistEmpty(t *testing.T) {
 	tracker := gazelle.Tracker{}
 	a := whatapi.Artist{}
 	r, err := gazelle.NewArtist(tracker, a)
@@ -2100,7 +2100,7 @@ func TestNewArtist(t *testing.T) {
 	}
 }
 
-func TestTorrentUpdateCross_InsertSrcNoDst(t *testing.T) {
+func TestTorrentUpdateCrossInsertSrcNoDst(t *testing.T) {
 	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -2148,7 +2148,7 @@ INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,
 	}
 }
 
-func TestTorrentUpdateCross_DupSrcNoDst(t *testing.T) {
+func TestTorrentUpdateCrossDupSrcNoDst(t *testing.T) {
 	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -2194,7 +2194,7 @@ INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
 	}
 }
 
-func TestTorrentUpdateCross_InsertSrcAndDst(t *testing.T) {
+func TestTorrentUpdateCrossInsertSrcAndDst(t *testing.T) {
 	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -2258,7 +2258,7 @@ INSERT INTO torrents VALUES ("other",4,3,"hash2","","","",false,0,"","",NULL,fal
 	}
 }
 
-func TestTorrentUpdateCross_ReplaceSrcAndDst(t *testing.T) {
+func TestTorrentUpdateCrossReplaceSrcAndDst(t *testing.T) {
 	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -2328,7 +2328,7 @@ func addrOfBool(b bool) *bool    { return &b }
 func addrOfInt(i int) *int       { return &i }
 func addrOfInt64(i int64) *int64 { return &i }
 
-func TestNewTorrentStruct_Empty(t *testing.T) {
+func TestNewTorrentStructEmpty(t *testing.T) {
 	g := gazelle.Group{}
 	ts := whatapi.TorrentStruct{
 		Time: "1234-05-06 07:08:09",
@@ -2430,7 +2430,7 @@ func TestNewTorrentStruct(t *testing.T) {
 	}
 }
 
-func TestNewGetTorrentStruct_Empty(t *testing.T) {
+func TestNewGetTorrentStructEmpty(t *testing.T) {
 	tracker := expectTracker
 	tr := whatapi.GetTorrentStruct{
 		Group: whatapi.GroupStruct{
@@ -2500,7 +2500,7 @@ func TestNewGetTorrentStruct(t *testing.T) {
 	}
 }
 
-func TestTrackerGetTorrent_BadID(t *testing.T) {
+func TestTrackerGetTorrentBadID(t *testing.T) {
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
@@ -2608,7 +2608,7 @@ var (
 	}
 )
 
-func TestTrackerGetTorrent_ByID(t *testing.T) {
+func TestTrackerGetTorrentByID(t *testing.T) {
 	m := MockWhatAPI{
 		JSON:  torrent1JSON,
 		Calls: &[]string{},
@@ -2628,7 +2628,7 @@ func TestTrackerGetTorrent_ByID(t *testing.T) {
 	}
 }
 
-func TestTrackerGetTorrentByHash_BadHash(t *testing.T) {
+func TestTrackerGetTorrentByHashBadHash(t *testing.T) {
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
@@ -2694,7 +2694,7 @@ func TestNewTorrentGroup(t *testing.T) {
 	}
 }
 
-func TestTrackerGetGroup_BadID(t *testing.T) {
+func TestTrackerGetGroupBadID(t *testing.T) {
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
@@ -2746,7 +2746,7 @@ func TestTrackerGetGroup(t *testing.T) {
 	}
 }
 
-func TestTrackerGetGroupByHash_BadHash(t *testing.T) {
+func TestTrackerGetGroupByHashBadHash(t *testing.T) {
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad hash parameter"}`,
 		Calls: &[]string{},
@@ -3170,7 +3170,7 @@ func TestTrackerGetArtistByName(t *testing.T) {
 	}
 }
 
-func TestTrackerSearch_BadParams(t *testing.T) {
+func TestTrackerSearchBadParams(t *testing.T) {
 	m := MockWhatAPI{
 		JSON:  `{"status":"failure","error":"bad search parameter"}`,
 		Calls: &[]string{},
@@ -3192,7 +3192,7 @@ func TestTrackerSearch_BadParams(t *testing.T) {
 	}
 }
 
-func TestTrackerSearch_Empty(t *testing.T) {
+func TestTrackerSearchEmpty(t *testing.T) {
 	m := MockWhatAPI{
 		JSON:  `{"status":"success","response":{}}`,
 		Calls: &[]string{},
