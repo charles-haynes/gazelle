@@ -2381,7 +2381,7 @@ var (
 		Time:                     "1234-05-06 07:08:09",
 		DescriptionF:             "description",
 		FileList:                 "apifile1{{{1}}}|||apifile2{{{2}}}",
-		FilePathF:                "file/path",
+		FilePathF:                "file&amp;path",
 		UserID:                   7,
 		Username:                 "username",
 	}
@@ -2410,7 +2410,7 @@ var (
 		Reported:                addrOfBool(false),
 		Time:                    gtime,
 		Description:             addrOf("description"),
-		FilePath:                addrOf("file/path"),
+		FilePath:                addrOf("file&path"),
 		UserID:                  addrOfInt(7),
 		Username:                addrOf("username"),
 		Files:                   []whatapi.FileStruct{{"apifile1", 1}, {"apifile2", 2}},

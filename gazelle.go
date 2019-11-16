@@ -764,6 +764,11 @@ func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
 	if err != nil {
 		return Torrent{}, err
 	}
+	var filePath *string = &t.FilePathF
+	if t.FilePath() != t.FilePathF {
+		f := t.FilePath()
+		filePath = &f
+	}
 	return Torrent{
 		Group:                   g,
 		ID:                      t.ID(),
@@ -789,7 +794,7 @@ func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
 		Reported:                &t.Reported,
 		Time:                    ttime,
 		Description:             &t.DescriptionF,
-		FilePath:                &t.FilePathF,
+		FilePath:                filePath,
 		UserID:                  &t.UserID,
 		Username:                &t.Username,
 		Files:                   files,
@@ -943,7 +948,7 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 				// Reported
 				// Time
 				// Description
-				// FilePAth
+				// FilePath
 				// UserID
 				// UserName
 				// Files
