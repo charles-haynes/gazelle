@@ -22,7 +22,6 @@ package gazelle
 
 import (
 	"fmt"
-	"html"
 	"net/url"
 	"strconv"
 	"strings"
@@ -931,7 +930,7 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 				Encoding: r.Encoding,
 				// Remastered
 				RemasterYear:  r.Year,
-				RemasterTitle: html.UnescapeString(r.RemasterTitle),
+				RemasterTitle: r.RemasterTitle(),
 				// RemasterRecordLabel
 				// RemasterCatalogueNumber
 				Scene:       r.Scene,
