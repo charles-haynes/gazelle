@@ -40,24 +40,24 @@ type Tracker struct {
 	Path            string
 	Host            string
 	Conf            string
-	ReleaseTypes    map[int64]string
-	Categories      map[int64]string
+	ReleaseTypes    map[int]string
+	Categories      map[int]string
 	TokenSize       int64 // torrents bigger than this, try to use a token
-	updatedArtists  map[int64]struct{}
-	updatedGroups   map[int64]struct{}
+	updatedArtists  map[int]struct{}
+	updatedGroups   map[int]struct{}
 	updatedTorrents map[int]struct{}
 }
 
 // Artist is a single gazelle artist
 type Artist struct {
-	ID   int64  `db:"id"`
+	ID   int    `db:"id"`
 	Name string `db:"name"`
 }
 
 // Update artist stores the artist in the db
 func (a Artist) Update(tx *sqlx.Tx, tracker Tracker) error {
 	if tracker.updatedArtists == nil {
-		tracker.updatedArtists = map[int64]struct{}{}
+		tracker.updatedArtists = map[int]struct{}{}
 	}
 	if _, ok := tracker.updatedArtists[a.ID]; ok {
 		return nil
@@ -92,7 +92,7 @@ func (a Artists) Names() []string {
 // populating a torrent (and should probably just be part of get torrent)
 func (t *Torrent) GetArtists(db *sqlx.DB) error {
 	var artists []struct {
-		ID   int64  `db:"id"`
+		ID   int    `db:"id"`
 		Name string `db:"name"`
 		Role string `db:"role"`
 	}
@@ -148,31 +148,31 @@ func NewMusicInfo(tracker Tracker, mi whatapi.MusicInfo) Artists {
 	artists := map[string][]Artist{}
 	artists["Composer"] = make([]Artist, len(mi.Composers))
 	for i, m := range mi.Composers {
-		artists["Composer"][i] = Artist{int64(m.ID), m.Name}
+		artists["Composer"][i] = Artist{m.ID, m.Name}
 	}
 	artists["DJ"] = make([]Artist, len(mi.DJ))
 	for i, m := range mi.DJ {
-		artists["DJ"][i] = Artist{int64(m.ID), m.Name}
+		artists["DJ"][i] = Artist{m.ID, m.Name}
 	}
 	artists["Artist"] = make([]Artist, len(mi.Artists))
 	for i, m := range mi.Artists {
-		artists["Artist"][i] = Artist{int64(m.ID), m.Name}
+		artists["Artist"][i] = Artist{m.ID, m.Name}
 	}
 	artists["With"] = make([]Artist, len(mi.With))
 	for i, m := range mi.With {
-		artists["With"][i] = Artist{int64(m.ID), m.Name}
+		artists["With"][i] = Artist{m.ID, m.Name}
 	}
 	artists["Conductor"] = make([]Artist, len(mi.Conductor))
 	for i, m := range mi.Conductor {
-		artists["Conductor"][i] = Artist{int64(m.ID), m.Name}
+		artists["Conductor"][i] = Artist{m.ID, m.Name}
 	}
 	artists["RemixedBy"] = make([]Artist, len(mi.RemixedBy))
 	for i, m := range mi.RemixedBy {
-		artists["RemixedBy"][i] = Artist{int64(m.ID), m.Name}
+		artists["RemixedBy"][i] = Artist{m.ID, m.Name}
 	}
 	artists["Producer"] = make([]Artist, len(mi.Producer))
 	for i, m := range mi.Producer {
-		artists["Producer"][i] = Artist{int64(m.ID), m.Name}
+		artists["Producer"][i] = Artist{m.ID, m.Name}
 	}
 	return Artists{
 		Tracker: tracker,
@@ -204,7 +204,7 @@ func NewExtendedArtistMap(tracker Tracker, am whatapi.ExtendedArtistMap) Artists
 		a[roles[r]] = make([]Artist, len(m))
 		for i, ma := range m {
 			a[roles[r]][i] = Artist{
-				ID:   int64(ma.ID),
+				ID:   ma.ID,
 				Name: ma.Name,
 			}
 		}
@@ -214,13 +214,13 @@ func NewExtendedArtistMap(tracker Tracker, am whatapi.ExtendedArtistMap) Artists
 
 type Group struct {
 	Artists
-	ID              int64      `db:"groupid"`
+	ID              int        `db:"groupid"`
 	Name            string     `db:"groupname"`
-	Year            int64      `db:"year"`
+	Year            int        `db:"year"`
 	RecordLabel     *string    `db:"recordlabel"`
 	CatalogueNumber *string    `db:"cataloguenumber"`
-	ReleaseTypeF    int64      `db:"releasetype"`
-	CategoryID      *int64     `db:"categoryid"`
+	ReleaseTypeF    int        `db:"releasetype"`
+	CategoryID      *int       `db:"categoryid"`
 	CategoryName    *string    `db:"categoryname"`
 	Time            *time.Time `db:"time"`
 	VanityHouse     bool       `db:"vanityhouse"`
@@ -281,11 +281,16 @@ func (t *Torrent) Fill(tx *sqlx.Tx) error {
 	start := time.Now()
 	fmt.Printf("#     filling %s\n", t.ShortName())
 	var err error
-	*t, err = t.GetTorrent(t.ID)
+	tg, err := t.GetGroup(t.Group.ID)
 	if err != nil {
 		return err
 	}
-	t.Update(tx)
+	for _, ti := range tg {
+		if ti.ID == t.ID {
+			*t = ti
+		}
+		ti.Update(tx)
+	}
 	fmt.Printf("#     fill took %s\n", time.Since(start))
 	return nil
 }
@@ -312,7 +317,7 @@ func Bint(b bool) int {
 
 func (g Group) Update(tx *sqlx.Tx) error {
 	if g.updatedGroups == nil {
-		g.updatedGroups = map[int64]struct{}{}
+		g.updatedGroups = map[int]struct{}{}
 	}
 	if _, ok := g.updatedGroups[g.ID]; ok {
 		return nil
@@ -379,18 +384,17 @@ func NewGroupStruct(tracker Tracker, gs whatapi.GroupStruct) (g Group, err error
 	if err != nil {
 		return g, err
 	}
-	categoryID := int64(gs.CategoryID)
 	g = Group{
 		Artists:         al,
 		WikiImage:       &gs.WikiImageF,
 		WikiBody:        &gs.WikiBodyF,
-		ID:              int64(gs.ID()),
+		ID:              gs.ID(),
 		Name:            gs.Name(),
-		Year:            int64(gs.Year()),
+		Year:            gs.Year(),
 		RecordLabel:     &gs.RecordLabelF,
 		CatalogueNumber: &gs.CatalogueNumberF,
-		ReleaseTypeF:    int64(gs.ReleaseType()),
-		CategoryID:      &categoryID,
+		ReleaseTypeF:    gs.ReleaseType(),
+		CategoryID:      &gs.CategoryID,
 		CategoryName:    &gs.CategoryName,
 		Time:            &gtime,
 		VanityHouse:     gs.VanityHouse,
@@ -577,18 +581,18 @@ func NewGroupSearchResult(tracker Tracker, srs whatapi.TorrentSearchResultStruct
 	al := make([]Artist, len(srs.Torrents[0].Artists))
 	for i, a := range srs.Torrents[0].Artists {
 		al[i] = Artist{
-			ID:   int64(a.ID),
+			ID:   a.ID,
 			Name: a.Name,
 		}
 	}
 	return Group{
 		Artists: Artists{tracker, map[string][]Artist{"Artist": al}},
-		ID:      int64(srs.GroupID),
+		ID:      srs.GroupID,
 		Name:    srs.GroupName,
-		Year:    int64(srs.GroupYear),
+		Year:    srs.GroupYear,
 		// RecordLabel:
 		// CatalogueNumber:
-		ReleaseTypeF: int64(srs.ReleaseTypeF),
+		ReleaseTypeF: srs.ReleaseTypeF,
 		// CategoryID:
 		// CategoryName:
 		// Time:
@@ -660,18 +664,18 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 	torrents = []Torrent{}
 	for i, ag := range a.TorrentGroup {
 		al := NewExtendedArtistMap(tracker, ag.ExtendedArtists)
-		categoryID, err := strconv.ParseInt(ag.GroupCategoryID, 10, 64)
+		categoryID, err := strconv.Atoi(ag.GroupCategoryID)
 		if err != nil {
 			return torrents, err
 		}
 		g := Group{
 			Artists:         al,
-			ID:              int64(ag.GroupID),
+			ID:              ag.GroupID,
 			Name:            ag.GroupName(),
-			Year:            int64(ag.Year()),
+			Year:            ag.Year(),
 			RecordLabel:     &a.TorrentGroup[i].GroupRecordLabelF,
 			CatalogueNumber: &a.TorrentGroup[i].GroupCatalogueNumberF,
-			ReleaseTypeF:    int64(ag.ReleaseTypeF),
+			ReleaseTypeF:    ag.ReleaseTypeF,
 			CategoryID:      &categoryID,
 			// CategoryName
 			// Time
@@ -892,17 +896,17 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 					"Artist": {{Name: r.Artist}},
 				},
 			}
-			groupCategory := int64(r.GroupCategory)
-			rt, err := strconv.ParseInt(r.ReleaseType, 10, 64)
+			rt, err := strconv.Atoi(r.ReleaseType)
 			if err != nil {
 				return nil, fmt.Errorf("releaseType: %w", err)
 			}
+			categoryID := r.GroupCategory
 			g := Group{
 				Artists:      a,
-				ID:           int64(r.GroupID),
+				ID:           r.GroupID,
 				Name:         r.GroupName,
-				CategoryID:   &groupCategory,
-				Year:         int64(r.GroupYear),
+				CategoryID:   &categoryID,
+				Year:         r.GroupYear,
 				Tags:         strings.Join(r.Tags, ","),
 				WikiImage:    &t.Results[i].WikiImage,
 				ReleaseTypeF: rt,

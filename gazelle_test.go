@@ -553,7 +553,7 @@ func TestGroupReleaseType(t *testing.T) {
 	g := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: gazelle.Tracker{
-				ReleaseTypes: map[int64]string{1: "release"},
+				ReleaseTypes: map[int]string{1: "release"},
 			},
 		},
 		ReleaseTypeF: 1,
@@ -656,7 +656,7 @@ func TestTorrentFill_NeedsFilling(t *testing.T) {
 		t.Error(err)
 	}
 	m := MockWhatAPI{
-		JSON:  torrent1JSON,
+		JSON:  group2JSON,
 		Calls: &[]string{},
 	}
 	to := gazelle.Torrent{
@@ -667,6 +667,7 @@ func TestTorrentFill_NeedsFilling(t *testing.T) {
 					Name:    "tracker",
 				},
 			},
+			ID: 2,
 		},
 		ID: 1,
 	}
@@ -675,8 +676,8 @@ func TestTorrentFill_NeedsFilling(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !m.Contains("GetTorrent") {
-		t.Errorf("expected to Get Torrent")
+	if !m.Contains("GetTorrentGroup") {
+		t.Errorf("expected to Get Torrent Group")
 	}
 	if !m.Contains("GetJSON") {
 		t.Errorf("expected to fetch JSON")
@@ -1059,8 +1060,8 @@ var (
 		Year:            2,
 		RecordLabel:     addrOf("recordlabel"),
 		CatalogueNumber: addrOf("cataloguenumber"),
-		ReleaseTypeF:    int64(7),
-		CategoryID:      addrOfInt64(3),
+		ReleaseTypeF:    7,
+		CategoryID:      addrOfInt(3),
 		CategoryName:    addrOf("categoryname"),
 		Time:            &gtime,
 		VanityHouse:     true,
@@ -1323,7 +1324,7 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 func TestTorrentGetFiles_FromAPI(t *testing.T) {
 	db := NewTestDB()
 	m := MockWhatAPI{
-		JSON:  torrent1JSON,
+		JSON:  group2JSON,
 		Calls: &[]string{},
 	}
 	_, err := db.Exec(`
@@ -1342,6 +1343,7 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 					Name:    "tracker",
 				},
 			},
+			ID: 2,
 		},
 		ID:        1,
 		FileCount: 2,
@@ -1362,7 +1364,7 @@ func TestTorrentString_NotRemastered(t *testing.T) {
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
 					Name: "tracker",
-					ReleaseTypes: map[int64]string{
+					ReleaseTypes: map[int]string{
 						1: "releasetype1",
 					},
 				},
@@ -1397,7 +1399,7 @@ func TestTorrentString_Remastered(t *testing.T) {
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
 					Name: "tracker",
-					ReleaseTypes: map[int64]string{
+					ReleaseTypes: map[int]string{
 						1: "releasetype1",
 					},
 				},
@@ -1786,7 +1788,7 @@ func TestNewArtist_Empty(t *testing.T) {
 
 func TestNewArtist(t *testing.T) {
 	tracker := gazelle.Tracker{
-		ReleaseTypes: map[int64]string{
+		ReleaseTypes: map[int]string{
 			2: "releasetype2",
 			3: "releasetype3",
 		},
@@ -1971,7 +1973,7 @@ func TestNewArtist(t *testing.T) {
 		RecordLabel:     addrOf("recordlabel2"),
 		CatalogueNumber: addrOf("catalogue2"),
 		ReleaseTypeF:    2,
-		CategoryID:      addrOfInt64(2),
+		CategoryID:      addrOfInt(2),
 		CategoryName:    nil,
 		Time:            nil,
 		VanityHouse:     true,
@@ -1988,7 +1990,7 @@ func TestNewArtist(t *testing.T) {
 		RecordLabel:     addrOf("recordlabel3"),
 		CatalogueNumber: addrOf("catalogue3"),
 		ReleaseTypeF:    3,
-		CategoryID:      addrOfInt64(3),
+		CategoryID:      addrOfInt(3),
 		CategoryName:    nil,
 		Time:            nil,
 		VanityHouse:     false,
@@ -2458,7 +2460,7 @@ func TestNewGetTorrentStruct_Empty(t *testing.T) {
 			},
 			RecordLabel:     addrOf(""),
 			CatalogueNumber: addrOf(""),
-			CategoryID:      addrOfInt64(0),
+			CategoryID:      addrOfInt(0),
 			CategoryName:    addrOf(""),
 			Time:            &gtime,
 			WikiImage:       addrOf(""),
@@ -2536,7 +2538,7 @@ var (
 		RecordLabel:     addrOf("recordlabel"),
 		CatalogueNumber: addrOf("cataloguenumber"),
 		ReleaseTypeF:    1,
-		CategoryID:      addrOfInt64(1),
+		CategoryID:      addrOfInt(1),
 		CategoryName:    addrOf("categoryname"),
 		Time:            &gtime,
 		VanityHouse:     true,
@@ -2565,7 +2567,7 @@ var (
 		RecordLabel:     addrOf("label"),
 		CatalogueNumber: addrOf("catalogue"),
 		ReleaseTypeF:    1,
-		CategoryID:      addrOfInt64(2),
+		CategoryID:      addrOfInt(2),
 		CategoryName:    addrOf("category"),
 		Time:            &gtime2,
 		VanityHouse:     false,
@@ -2827,7 +2829,7 @@ func TestTrackerGetArtist(t *testing.T) {
 		Year:            2011,
 		RecordLabel:     addrOf("label"),
 		CatalogueNumber: addrOf("catalogue"),
-		CategoryID:      addrOfInt64(1),
+		CategoryID:      addrOfInt(1),
 		Tags:            "tag1,tag2",
 		ReleaseTypeF:    6,
 		WikiImage:       addrOf("wikiimage"),
@@ -2852,7 +2854,7 @@ func TestTrackerGetArtist(t *testing.T) {
 		Year:            2008,
 		RecordLabel:     addrOf("label4"),
 		CatalogueNumber: addrOf("catalog4"),
-		CategoryID:      addrOfInt64(1),
+		CategoryID:      addrOfInt(1),
 		Tags:            "tag4",
 		ReleaseTypeF:    7,
 		WikiImage:       addrOf("wikiimage4"),
@@ -3013,7 +3015,7 @@ func TestTrackerGetArtistByName(t *testing.T) {
 		Year:            2011,
 		RecordLabel:     addrOf("label"),
 		CatalogueNumber: addrOf("catalogue"),
-		CategoryID:      addrOfInt64(1),
+		CategoryID:      addrOfInt(1),
 		Tags:            "tag1,tag2",
 		ReleaseTypeF:    6,
 		WikiImage:       addrOf("wikiimage"),
@@ -3038,7 +3040,7 @@ func TestTrackerGetArtistByName(t *testing.T) {
 		Year:            2008,
 		RecordLabel:     addrOf("label4"),
 		CatalogueNumber: addrOf("catalog4"),
-		CategoryID:      addrOfInt64(1),
+		CategoryID:      addrOfInt(1),
 		Tags:            "tag4",
 		ReleaseTypeF:    7,
 		WikiImage:       addrOf("wikiimage4"),
@@ -3351,7 +3353,7 @@ func TestNewTopTenTorrents(t *testing.T) {
 				},
 				ID:           2,
 				Name:         "groupname",
-				CategoryID:   addrOfInt64(3),
+				CategoryID:   addrOfInt(3),
 				Year:         4,
 				Tags:         "tags",
 				WikiImage:    addrOf("wikiimage"),
@@ -3410,7 +3412,7 @@ func TestTrackerTop10(t *testing.T) {
 				},
 				ID:           2,
 				Name:         "group2",
-				CategoryID:   addrOfInt64(1),
+				CategoryID:   addrOfInt(1),
 				Year:         2002,
 				Tags:         "tag1,tag2,tag3",
 				WikiImage:    addrOf("wikiimage1"),
@@ -3442,7 +3444,7 @@ func TestTrackerTop10(t *testing.T) {
 				},
 				ID:           9,
 				Name:         "group9",
-				CategoryID:   addrOfInt64(1),
+				CategoryID:   addrOfInt(1),
 				Year:         2009,
 				Tags:         "tag9,tag10",
 				WikiImage:    addrOf("wikiimage16"),
@@ -3474,7 +3476,7 @@ func TestTrackerTop10(t *testing.T) {
 				},
 				ID:           19,
 				Name:         "group21",
-				CategoryID:   addrOfInt64(22),
+				CategoryID:   addrOfInt(22),
 				Year:         2023,
 				Tags:         "tag28,tag29",
 				WikiImage:    addrOf("wikiimage34"),
@@ -3506,7 +3508,7 @@ func TestTrackerTop10(t *testing.T) {
 				},
 				ID:           37,
 				Name:         "group39",
-				CategoryID:   addrOfInt64(40),
+				CategoryID:   addrOfInt(40),
 				Year:         2041,
 				Tags:         "",
 				WikiImage:    addrOf("wikiimage50"),
