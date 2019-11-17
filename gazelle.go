@@ -275,13 +275,18 @@ func (t Torrent) ShortName() string {
 }
 
 func (t *Torrent) Fill(tx *sqlx.Tx) error {
-	if t.Files != nil && t.FilePath != nil {
+	if t.Files != nil && NullableString(t.FilePath) != "" {
 		return nil // already filled
 	}
 	start := time.Now()
 	fmt.Printf("#     filling %s\n", t.ShortName())
 	var err error
-	tg, err := t.GetGroup(t.Group.ID)
+	var tg = make([]Torrent, 1)
+	if t.Group.ID == 0 {
+		tg[0], err = t.GetTorrent(t.ID)
+	} else {
+		tg, err = t.GetGroup(t.Group.ID)
+	}
 	if err != nil {
 		return err
 	}

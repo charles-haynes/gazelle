@@ -649,7 +649,7 @@ func TestTorrentFillAlreadyFilled(t *testing.T) {
 	}
 }
 
-func TestTorrentFillNeedsFilling(t *testing.T) {
+func TestTorrentFillNeedsFillingNilFiles(t *testing.T) {
 	db := NewTestDB()
 	tx, err := db.Beginx()
 	if err != nil {
@@ -670,6 +670,49 @@ func TestTorrentFillNeedsFilling(t *testing.T) {
 			ID: 2,
 		},
 		ID: 1,
+	}
+	m.Reset()
+	err = to.Fill(tx)
+	if err != nil {
+		t.Error(err)
+	}
+	if !m.Contains("GetTorrentGroup") {
+		t.Errorf("expected to Get Torrent Group")
+	}
+	if !m.Contains("GetJSON") {
+		t.Errorf("expected to fetch JSON")
+	}
+	if to.Files == nil {
+		t.Errorf("expected to fill Files")
+	}
+	if to.FilePath == nil {
+		t.Errorf("expected to fill FilePath")
+	}
+}
+
+func TestTorrentFillNeedsFillingEmptyFilePath(t *testing.T) {
+	db := NewTestDB()
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Error(err)
+	}
+	m := MockWhatAPI{
+		JSON:  group2JSON,
+		Calls: &[]string{},
+	}
+	to := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{
+					WhatAPI: m,
+					Name:    "tracker",
+				},
+			},
+			ID: 2,
+		},
+		FilePath: addrOf(""),
+		Files:    []whatapi.FileStruct{},
+		ID:       1,
 	}
 	m.Reset()
 	err = to.Fill(tx)
