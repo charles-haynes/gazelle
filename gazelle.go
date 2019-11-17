@@ -505,17 +505,19 @@ func (t *Torrent) GetFiles(db *sqlx.DB) error {
 	if t.Files != nil {
 		return nil
 	}
-	var f []whatapi.FileStruct
-	err := db.Select(&f, `
+	if t.FilePath != nil {
+		var f []whatapi.FileStruct
+		err := db.Select(&f, `
 SELECT name AS namef, size
 FROM files
 WHERE tracker=? AND torrentid=?`, t.Tracker.Name, t.ID)
-	if err != nil {
-		return err
-	}
-	if len(f) == t.FileCount {
-		t.Files = f
-		return nil
+		if err != nil {
+			return err
+		}
+		if len(f) == t.FileCount {
+			t.Files = f
+			return nil
+		}
 	}
 	tx, err := db.Beginx()
 	if err == nil {

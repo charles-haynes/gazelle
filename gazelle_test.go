@@ -1352,6 +1352,7 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 			},
 		},
 		ID:        1,
+		FilePath:  addrOf("filepath"),
 		FileCount: 1,
 	}
 	err = to.GetFiles(db)
@@ -1359,6 +1360,42 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 		t.Error(err)
 	}
 	expected := []whatapi.FileStruct{{"dbfilename", 3}}
+	if !reflect.DeepEqual(expected, to.Files) {
+		t.Errorf("expected files to be %v got %v", expected, to.Files)
+	}
+}
+
+func TestTorrentGetFilesNoFilePath(t *testing.T) {
+	db := NewTestDB()
+	m := MockWhatAPI{
+		JSON:  torrent1JSON,
+		Calls: &[]string{},
+	}
+	_, err := db.Exec(`
+INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
+INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,1,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
+`)
+	if err != nil {
+		t.Error(err)
+	}
+	to := gazelle.Torrent{
+		Group: gazelle.Group{
+			Artists: gazelle.Artists{
+				Tracker: gazelle.Tracker{
+					WhatAPI: m,
+					Name:    "tracker",
+				},
+			},
+		},
+		ID:        1,
+		FileCount: 1,
+	}
+	err = to.GetFiles(db)
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []whatapi.FileStruct{{"apifile1", 1}, {"apifile2", 2}}
 	if !reflect.DeepEqual(expected, to.Files) {
 		t.Errorf("expected files to be %v got %v", expected, to.Files)
 	}
@@ -1372,7 +1409,7 @@ func TestTorrentGetFilesFromAPI(t *testing.T) {
 	}
 	_, err := db.Exec(`
 INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
-INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,1,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
+INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,1,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,"dbfilepath",NULL,NULL);
 INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 `)
 	if err != nil {
@@ -1398,6 +1435,9 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 	expected := []whatapi.FileStruct{{"apifile1", 1}, {"apifile2", 2}}
 	if !reflect.DeepEqual(expected, to.Files) {
 		t.Errorf("expected files to be %v got %v", expected, to.Files)
+	}
+	if gazelle.NullableString(to.FilePath) != "filepath" {
+		t.Errorf("expected FilePAth to be filepath got %v", to.FilePath)
 	}
 }
 
