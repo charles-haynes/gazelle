@@ -22,11 +22,14 @@ package gazelle
 
 import (
 	"fmt"
+	"math"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/charles-haynes/munkres"
+	"github.com/charles-haynes/strsim"
 	"github.com/charles-haynes/whatapi"
 	"github.com/jmoiron/sqlx"
 )
@@ -45,6 +48,161 @@ type Tracker struct {
 	updatedArtists  map[int]struct{}
 	updatedGroups   map[int]struct{}
 	updatedTorrents map[int]struct{}
+}
+
+// WeightedScore lets you compute a single weighted score from a series
+// of scores and weights. It uses the geometric mean (distance) as the Score
+type WeightedScore struct {
+	s float64
+	w float64
+}
+
+// Update adds a score and weight to the WeightedScore
+func (s *WeightedScore) Update(sc, w float64) {
+	s.s += sc * w * sc * w
+	s.w += w * w
+}
+
+// Score is the current value of the WeightedScore
+func (s WeightedScore) Score() float64 {
+	if s.w == 0.0 {
+		return 0.0
+	}
+	return math.Sqrt(s.s) / math.Sqrt(s.w)
+}
+
+// Similarity measures how similar two strings are from [0.0..1.0] where
+// 0.0 is no similarity at all and 1.0 is equal strings
+func Similarity(a, b string) float64 {
+	return strsim.WrapNoCase(strsim.LCS)(a, b)
+}
+
+func scoreSize(t1, t2 Torrent) float64 {
+	if len(t1.Files) == len(t2.Files) && t1.Size == t2.Size {
+		return 1.0
+	}
+	return 0.0
+}
+
+// FileSimilarity measures how similar the files are between two torrents
+// with 0.0 being not at all similar, and 1.0 being identical
+func FileSimilarity(t1, t2 Torrent) (float64, error) {
+	if scoreSize(t1, t2) == 1.0 {
+		return 1.0, nil
+	}
+	if len(t1.Files) < len(t2.Files) {
+		t1, t2 = t2, t1
+	}
+	var costs = make([][]float64, len(t1.Files))
+	for i, f1 := range t1.Files {
+		costs[i] = make([]float64, len(t2.Files))
+		for j, f2 := range t2.Files {
+			costs[i][j] = Similarity(f1.Name(), f2.Name())
+		}
+	}
+	m, err := munkres.NewHungarianAlgorithm(costs)
+	if err != nil {
+		return 0.0, err
+	}
+	a := m.Execute()
+	sumOfSquares := 0.0
+	sum := 0.0
+	for i, f1 := range t1.Files {
+		if a[i] < 0 {
+			sumOfSquares += 1.0
+			sum += float64(f1.Size)
+		} else {
+			n := float64(f1.Size - t2.Files[a[i]].Size)
+			d := float64(f1.Size + t2.Files[a[i]].Size)
+			sumOfSquares += (n / d) * (n / d)
+			sum += d
+		}
+	}
+	return 1.0 - math.Sqrt(sumOfSquares/(sum*sum)), nil
+}
+
+func threeWayYear(y1, y2 int) float64 {
+	if y1 == y2 {
+		return 1.0
+	}
+	if y1 == 0 || y2 == 0 {
+		return 0.5
+	}
+	switch y1 - y2 {
+	case 0:
+		return 1.0
+	case 1, -1:
+		return 0.9
+	case 2, -2:
+		return 0.6
+	case 3, -3:
+		return 0.1
+	}
+	return 0.0
+}
+
+func threeWaySim(s1, s2 string) float64 {
+	if s1 == s2 {
+		return 1.0
+	}
+	if s1 != "" && s2 != "" {
+		return Similarity(s1, s2)
+	}
+	// one known, one unknown
+	return 0.5
+}
+
+// ReleaseSimilarity measures how similar two torrent releases are
+// with 0.0 being not at all similar, and 1.0 being identical
+func ReleaseSimilarity(t1, t2 Torrent) float64 {
+	score := WeightedScore{}
+	if t1.Format != t2.Format {
+		return 0.0
+	}
+	if t1.Encoding != t2.Encoding {
+		return 0.0
+	}
+	if t1.Media != t2.Media {
+		return 0.0
+	}
+	tYear := t1.Year
+	tRecLab := NullableString(t1.RecordLabel)
+	tCatNum := NullableString(t1.CatalogueNumber)
+	tRemTit := ""
+	if t1.Remastered {
+		tYear = t1.RemasterYear
+		tRecLab = t1.RemasterRecordLabel
+		tCatNum = NullableString(t1.RemasterCatalogueNumber)
+		tRemTit = t1.RemasterTitle
+	}
+	rYear := t2.Year
+	rRecLab := NullableString(t2.RecordLabel)
+	rCatNum := NullableString(t2.CatalogueNumber)
+	rRemTit := ""
+	if t2.Remastered {
+		rYear = t2.RemasterYear
+		rRecLab = t2.RemasterRecordLabel
+		rCatNum = NullableString(t2.RemasterCatalogueNumber)
+		rRemTit = t2.RemasterTitle
+	}
+
+	if rCatNum == "" {
+		// some people have put both record label and catalogue number
+		// into the record label separated by " / "
+		ss := strings.SplitN(rRecLab, " / ", 2)
+		if len(ss) == 2 {
+			rRecLab = ss[0]
+			rCatNum = ss[1]
+		}
+	}
+
+	score.Update(threeWaySim(tCatNum, rCatNum), 0.50)
+	score.Update(threeWaySim(tRecLab, rRecLab), 0.20)
+	score.Update(threeWaySim(tRemTit, rRemTit), 0.10)
+	score.Update(threeWaySim(t1.ReleaseType(), t2.ReleaseType()), 0.05)
+	score.Update(threeWayYear(tYear, rYear), 0.02)
+
+	return score.Score()
 }
 
 // Artist is a single gazelle artist
@@ -71,20 +229,49 @@ func (a Artist) Update(tx *sqlx.Tx, tracker Tracker) error {
 	return nil
 }
 
+// Similarity measures how similar two artists are with 0.0 being not at all
+// and 1.0 being the same
+func (a Artist) Similarity(a2 Artist) float64 {
+	if a.ID == a2.ID {
+		return 1.0
+	}
+	return Similarity(a.Name, a2.Name)
+}
+
+// ArtistList is just a list of Artist
+type ArtistList []Artist
+
+// Names returns the names of all the artists in the list
+func (a ArtistList) Names() []string {
+	s := make([]string, len(a))
+	for i := range a {
+		s[i] = a[i].Name
+	}
+	return s
+}
+
 // Artists is a tracker and a set of artists and their roles
 // usually associated with a group
 type Artists struct {
 	Tracker
-	Artists map[string][]Artist
+	Artists map[string]ArtistList
 }
 
 // Names returns a list of the main artists names from an artist list
 func (a Artists) Names() []string {
-	s := make([]string, len(a.Artists["Artist"]))
-	for i, a := range a.Artists["Artist"] {
-		s[i] = a.Name
+	return a.Artists["Artist"].Names()
+}
+
+// Similarity returns how similar two sets of artists are
+// with 0.0 being not at all similar and 1.0 being completely the same
+func (a Artists) Similarity(a2 Artists) float64 {
+	var ws WeightedScore
+	for c := range a.Artists {
+		ws.Update(strsim.ListSimilarity(
+			a.Artists[c].Names(), a2.Artists[c].Names(),
+			Similarity), 1.0)
 	}
-	return s
+	return ws.Score()
 }
 
 // GetArtists gets all of the artists for a torrent. Usually used when initially
@@ -104,7 +291,7 @@ WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID)
 		return err
 	}
 	if t.Artists.Artists == nil {
-		t.Artists.Artists = map[string][]Artist{}
+		t.Artists.Artists = map[string]ArtistList{}
 	}
 	for _, a := range artists {
 		t.Artists.Artists[a.Role] = append(
@@ -113,21 +300,26 @@ WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID)
 	return nil
 }
 
-// Display name for artists is the human readable string formatting of the
-// artists, intended to replicate the internal gazelle logic for formatting
-// artist names
-func (a Artists) DisplayName() string {
-	switch len(a.Artists["Artist"]) {
+// DisplayName for an artist list is the human readable form of the
+// list, or "Various <role>" if multiple
+func (a ArtistList) DisplayName(role string) string {
+	switch len(a) {
 	case 0:
 		return ""
 	case 1:
-		return a.Artists["Artist"][0].Name
+		return a[0].Name
 	case 2:
-		return a.Artists["Artist"][0].Name + " & " +
-			a.Artists["Artist"][1].Name
+		return a[0].Name + " & " + a[1].Name
 	default:
-		return "Various Artists"
+		return "Various " + role
 	}
+}
+
+// DisplayName for artists is the human readable string formatting of the
+// artists, intended to replicate the internal gazelle logic for formatting
+// artist names
+func (a Artists) DisplayName() string {
+	return a.Artists["Artist"].DisplayName("Artists")
 }
 
 // Update artists just updates each artist in the aggregate
@@ -144,7 +336,7 @@ func (a Artists) Update(tx *sqlx.Tx) error {
 
 // NewMusicInfo creates Artists from a tracker and whatapi.MusicInfo struct
 func NewMusicInfo(tracker Tracker, mi whatapi.MusicInfo) Artists {
-	artists := map[string][]Artist{}
+	artists := map[string]ArtistList{}
 	artists["Composer"] = make([]Artist, len(mi.Composers))
 	for i, m := range mi.Composers {
 		artists["Composer"][i] = Artist{m.ID, m.Name}
@@ -198,7 +390,7 @@ var roles = map[string]string{
 
 // NewExtendedArtistMap creates Artists from a tracker and a whatapi.ExtendedArtistMap
 func NewExtendedArtistMap(tracker Tracker, am whatapi.ExtendedArtistMap) Artists {
-	a := map[string][]Artist{}
+	a := map[string]ArtistList{}
 	for r, m := range am {
 		a[roles[r]] = make([]Artist, len(m))
 		for i, ma := range m {
@@ -593,7 +785,7 @@ func NewGroupSearchResult(tracker Tracker, srs whatapi.TorrentSearchResultStruct
 		}
 	}
 	return Group{
-		Artists: Artists{tracker, map[string][]Artist{"Artist": al}},
+		Artists: Artists{tracker, map[string]ArtistList{"Artist": al}},
 		ID:      srs.GroupID,
 		Name:    srs.GroupName,
 		Year:    srs.GroupYear,
@@ -904,7 +1096,7 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 			}
 			a := Artists{
 				Tracker: tracker,
-				Artists: map[string][]Artist{
+				Artists: map[string]ArtistList{
 					"Artist": {{Name: r.Artist}},
 				},
 			}
