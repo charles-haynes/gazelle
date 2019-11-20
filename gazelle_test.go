@@ -413,7 +413,7 @@ func TestArtistUpdate(t *testing.T) {
 
 func TestArtistsNames(t *testing.T) {
 	a := gazelle.Artists{
-		Artists: map[string][]gazelle.Artist{
+		Artists: map[string]gazelle.ArtistList{
 			"Artist": {{1, "artist1"}, {2, "artist2"}},
 		},
 	}
@@ -433,7 +433,7 @@ func TestArtistsGetArtists(t *testing.T) {
 			ID: 2,
 		},
 	}
-	expectedArtists := map[string][]gazelle.Artist{
+	expectedArtists := map[string]gazelle.ArtistList{
 		"Role": {{1, "artist"}},
 	}
 	db := NewTestDB()
@@ -455,7 +455,7 @@ INSERT INTO artists_groups VALUES("tracker",1,2,"Role");
 }
 
 func TestArtistsDisplayName(t *testing.T) {
-	a := gazelle.Artists{Artists: map[string][]gazelle.Artist{}}
+	a := gazelle.Artists{Artists: map[string]gazelle.ArtistList{}}
 	if r := a.DisplayName(); r != "" {
 		t.Errorf("expected display name \"\", got \"%s\"", r)
 	}
@@ -484,7 +484,7 @@ func TestArtistsUpdate(t *testing.T) {
 	}
 	a := gazelle.Artists{
 		Tracker: expectTracker,
-		Artists: map[string][]gazelle.Artist{
+		Artists: map[string]gazelle.ArtistList{
 			"Artist": {{1, "artist1"}, {2, "artist2"}},
 		},
 	}
@@ -492,12 +492,12 @@ func TestArtistsUpdate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	var ta []gazelle.Artist
+	var ta gazelle.ArtistList
 	err = tx.Select(&ta, `SELECT name, id FROM artists`)
 	if err != nil {
 		t.Error(err)
 	}
-	expected := []gazelle.Artist{{1, "artist1"}, {2, "artist2"}}
+	expected := gazelle.ArtistList{{1, "artist1"}, {2, "artist2"}}
 	if !reflect.DeepEqual(expected, a.Artists["Artist"]) {
 		t.Errorf("expected %v got %v", expected, a.Artists["Artist"])
 	}
@@ -511,7 +511,7 @@ func TestNewMusicInfo(t *testing.T) {
 	}
 	expected := gazelle.Artists{
 		Tracker: tracker,
-		Artists: map[string][]gazelle.Artist{
+		Artists: map[string]gazelle.ArtistList{
 			"Composer":  {},
 			"DJ":        {},
 			"Artist":    {{1, "artist1"}, {2, "artist2"}},
@@ -538,7 +538,7 @@ func TestNewExtendedArtistMap(t *testing.T) {
 	}
 	expected := gazelle.Artists{
 		Tracker: tracker,
-		Artists: map[string][]gazelle.Artist{
+		Artists: map[string]gazelle.ArtistList{
 			"Artist": {{1, "artist1"}, {2, "artist2"}},
 			"With":   {{3, "artist3"}},
 		},
@@ -741,7 +741,7 @@ func TestGroupUpdateArtistsGroupsNoArtists(t *testing.T) {
 	}
 	g := gazelle.Group{
 		Artists: gazelle.Artists{
-			Artists: map[string][]gazelle.Artist{},
+			Artists: map[string]gazelle.ArtistList{},
 		},
 	}
 	err = g.UpdateArtistsGroups(tx)
@@ -774,7 +774,7 @@ INSERT INTO groups VALUES("tracker",NULL,NULL,3,"baz",0,"","","",NULL,NULL,NULL,
 			Tracker: gazelle.Tracker{
 				Name: "tracker",
 			},
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"role": {{1, "artist1"}, {2, "artist2"}},
 			},
 		},
@@ -832,7 +832,7 @@ func TestGroupUpdate(t *testing.T) {
 			Tracker: gazelle.Tracker{
 				Name: "tracker",
 			},
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"role": {{1, "artist1"}, {2, "artist2"}},
 			},
 		},
@@ -1085,7 +1085,7 @@ var (
 	expectTracker = gazelle.Tracker{Name: "tracker"}
 	expectArtists = gazelle.Artists{
 		Tracker: expectTracker,
-		Artists: map[string][]gazelle.Artist{
+		Artists: map[string]gazelle.ArtistList{
 			"Artist":    {{4, "artist4"}, {5, "artist5"}},
 			"Composer":  {},
 			"Conductor": {},
@@ -1451,7 +1451,7 @@ func TestTorrentStringNotRemastered(t *testing.T) {
 						1: "releasetype1",
 					},
 				},
-				Artists: map[string][]gazelle.Artist{
+				Artists: map[string]gazelle.ArtistList{
 					"Artist": {{1, "artist"}},
 				},
 			},
@@ -1486,7 +1486,7 @@ func TestTorrentStringRemastered(t *testing.T) {
 						1: "releasetype1",
 					},
 				},
-				Artists: map[string][]gazelle.Artist{
+				Artists: map[string]gazelle.ArtistList{
 					"Artist": {{1, "artist"}},
 				},
 			},
@@ -1564,7 +1564,7 @@ func TestNewGroupSearchResultEmptyTorrents(t *testing.T) {
 	}
 	expected := gazelle.Group{
 		Artists: gazelle.Artists{
-			Artists: map[string][]gazelle.Artist{"Artist": {}},
+			Artists: map[string]gazelle.ArtistList{"Artist": {}},
 		},
 	}
 	if err := GroupsEqual(expected, r); err != nil {
@@ -1593,7 +1593,7 @@ func TestNewGroupSearchResultNonEmptyTorrents(t *testing.T) {
 	}
 	expected := gazelle.Group{
 		Artists: gazelle.Artists{
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"Artist": {{1, "artist1"}, {2, "artist2"}},
 			},
 		},
@@ -1774,7 +1774,7 @@ func TestNewTorrentSearch(t *testing.T) {
 					Tracker: gazelle.Tracker{
 						Name: "tracker",
 					},
-					Artists: map[string][]gazelle.Artist{
+					Artists: map[string]gazelle.ArtistList{
 						"Artist": {
 							{1, "artist1"},
 							{2, "artist2"},
@@ -1812,7 +1812,7 @@ func TestNewTorrentSearch(t *testing.T) {
 					Tracker: gazelle.Tracker{
 						Name: "tracker",
 					},
-					Artists: map[string][]gazelle.Artist{
+					Artists: map[string]gazelle.ArtistList{
 						"Artist": {
 							{1, "artist1"},
 							{2, "artist2"},
@@ -2036,14 +2036,14 @@ func TestNewArtist(t *testing.T) {
 	}
 	artists2 := gazelle.Artists{
 		Tracker: tracker,
-		Artists: map[string][]gazelle.Artist{
+		Artists: map[string]gazelle.ArtistList{
 			"Artist": {{21, "artist21"}, {22, "artist22"}},
 			"With":   {{23, "artist23"}},
 		},
 	}
 	artists3 := gazelle.Artists{
 		Tracker: tracker,
-		Artists: map[string][]gazelle.Artist{
+		Artists: map[string]gazelle.ArtistList{
 			"Artist": {{31, "artist31"}, {32, "artist32"}},
 			"With":   {{33, "artist33"}},
 		},
@@ -2531,7 +2531,7 @@ func TestNewGetTorrentStructEmpty(t *testing.T) {
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: expectTracker,
-				Artists: map[string][]gazelle.Artist{
+				Artists: map[string]gazelle.ArtistList{
 					"Composer":  {},
 					"DJ":        {},
 					"Artist":    {},
@@ -2605,7 +2605,7 @@ var (
 	jsonGroup = gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: expectTracker,
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"Artist":    {{ID: 1, Name: "artist1"}, {ID: 2, Name: "artist2"}},
 				"Composer":  {},
 				"Conductor": {},
@@ -2634,7 +2634,7 @@ var (
 	jsonGroup2 = gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: expectTracker,
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"Artist":    {{1, "artist1"}, {2, "artist2"}},
 				"Composer":  {},
 				"Conductor": {},
@@ -2897,7 +2897,7 @@ func TestTrackerGetArtist(t *testing.T) {
 	g3 := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"Artist":    {{1, "name"}},
 				"With":      {{2, "name2"}, {3, "name3"}},
 				"Composer":  {},
@@ -2922,7 +2922,7 @@ func TestTrackerGetArtist(t *testing.T) {
 	g4 := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"Artist":    {{41, "artist41"}},
 				"Composer":  {},
 				"DJ":        {},
@@ -3083,7 +3083,7 @@ func TestTrackerGetArtistByName(t *testing.T) {
 	g3 := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"Artist":    {{1, "name"}},
 				"With":      {{2, "name2"}, {3, "name3"}},
 				"Composer":  {},
@@ -3108,7 +3108,7 @@ func TestTrackerGetArtistByName(t *testing.T) {
 	g4 := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"Artist":    {{41, "artist41"}},
 				"Composer":  {},
 				"DJ":        {},
@@ -3318,7 +3318,7 @@ func TestTrackerSearch(t *testing.T) {
 	g := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string][]gazelle.Artist{
+			Artists: map[string]gazelle.ArtistList{
 				"Artist": {{111, "artist111"}},
 			},
 		},
@@ -3395,7 +3395,7 @@ func TestNewTopTenTorrents(t *testing.T) {
 					TorrentID:      1,
 					GroupID:        2,
 					Artist:         "artist",
-					GroupName:      "groupname",
+					GroupNameF:     "groupname",
 					GroupCategory:  3,
 					GroupYear:      4,
 					RemasterTitleF: "remaster&#32;title",
@@ -3430,7 +3430,7 @@ func TestNewTopTenTorrents(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string][]gazelle.Artist{
+					Artists: map[string]gazelle.ArtistList{
 						"Artist": {{0, "artist"}},
 					},
 				},
@@ -3489,7 +3489,7 @@ func TestTrackerTop10(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string][]gazelle.Artist{
+					Artists: map[string]gazelle.ArtistList{
 						"Artist": {{0, "artist1"}},
 					},
 				},
@@ -3521,7 +3521,7 @@ func TestTrackerTop10(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string][]gazelle.Artist{
+					Artists: map[string]gazelle.ArtistList{
 						"Artist": {{0, "artist8"}},
 					},
 				},
@@ -3553,7 +3553,7 @@ func TestTrackerTop10(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string][]gazelle.Artist{
+					Artists: map[string]gazelle.ArtistList{
 						"Artist": {{0, "artist20"}},
 					},
 				},
@@ -3585,7 +3585,7 @@ func TestTrackerTop10(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string][]gazelle.Artist{
+					Artists: map[string]gazelle.ArtistList{
 						"Artist": {{0, "artist38"}},
 					},
 				},

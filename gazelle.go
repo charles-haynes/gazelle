@@ -581,6 +581,8 @@ func NewGroupStruct(tracker Tracker, gs whatapi.GroupStruct) (g Group, err error
 	if err != nil {
 		return g, err
 	}
+	recordLabel := gs.RecordLabel()
+	catalogueNumber := gs.CatalogueNumber()
 	g = Group{
 		Artists:         al,
 		WikiImage:       &gs.WikiImageF,
@@ -588,8 +590,8 @@ func NewGroupStruct(tracker Tracker, gs whatapi.GroupStruct) (g Group, err error
 		ID:              gs.ID(),
 		Name:            gs.Name(),
 		Year:            gs.Year(),
-		RecordLabel:     &gs.RecordLabelF,
-		CatalogueNumber: &gs.CatalogueNumberF,
+		RecordLabel:     &recordLabel,
+		CatalogueNumber: &catalogueNumber,
 		ReleaseTypeF:    gs.ReleaseType(),
 		CategoryID:      &gs.CategoryID,
 		CategoryName:    &gs.CategoryName,
@@ -787,7 +789,7 @@ func NewGroupSearchResult(tracker Tracker, srs whatapi.TorrentSearchResultStruct
 	return Group{
 		Artists: Artists{tracker, map[string]ArtistList{"Artist": al}},
 		ID:      srs.GroupID,
-		Name:    srs.GroupName,
+		Name:    srs.Name(),
 		Year:    srs.GroupYear,
 		// RecordLabel:
 		// CatalogueNumber:
@@ -807,6 +809,7 @@ func NewSearchTorrentStruct(g Group, rt whatapi.SearchTorrentStruct) (Torrent, e
 	if err != nil {
 		return Torrent{}, err
 	}
+	remasterCatalogueNumber := rt.RemasterCatalogueNumber()
 	return Torrent{
 		Group: g,
 		ID:    rt.ID(),
@@ -818,7 +821,7 @@ func NewSearchTorrentStruct(g Group, rt whatapi.SearchTorrentStruct) (Torrent, e
 		RemasterYear:  rt.RemasterYear(),
 		RemasterTitle: rt.RemasterTitle(),
 		// RemasterRecordLabel:     "",
-		RemasterCatalogueNumber: &rt.RemasterCatalogueNumberF,
+		RemasterCatalogueNumber: &remasterCatalogueNumber,
 		Scene:                   rt.Scene(),
 		HasLog:                  rt.HasLog(),
 		HasCue:                  rt.HasCue,
@@ -867,13 +870,15 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 		if err != nil {
 			return torrents, err
 		}
+		recordLabel := a.TorrentGroup[i].RecordLabel()
+		catalogueNumber := a.TorrentGroup[i].CatalogueNumber()
 		g := Group{
 			Artists:         al,
 			ID:              ag.GroupID,
-			Name:            ag.GroupName(),
+			Name:            ag.Name(),
 			Year:            ag.Year(),
-			RecordLabel:     &a.TorrentGroup[i].GroupRecordLabelF,
-			CatalogueNumber: &a.TorrentGroup[i].GroupCatalogueNumberF,
+			RecordLabel:     &recordLabel,
+			CatalogueNumber: &catalogueNumber,
 			ReleaseTypeF:    ag.ReleaseTypeF,
 			CategoryID:      &categoryID,
 			// CategoryName
@@ -967,6 +972,7 @@ func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
 		f := t.FilePath()
 		filePath = &f
 	}
+	remasterCatalogueNumber := t.RemasterCatalogueNumber()
 	return Torrent{
 		Group:                   g,
 		ID:                      t.ID(),
@@ -978,7 +984,7 @@ func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
 		RemasterYear:            t.RemasterYear(),
 		RemasterTitle:           t.RemasterTitle(),
 		RemasterRecordLabel:     t.RemasterRecordLabel(),
-		RemasterCatalogueNumber: &t.RemasterCatalogueNumberF,
+		RemasterCatalogueNumber: &remasterCatalogueNumber,
 		Scene:                   t.Scene(),
 		HasLog:                  t.HasLog(),
 		HasCue:                  t.HasCue,
@@ -1108,7 +1114,7 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 			g := Group{
 				Artists:      a,
 				ID:           r.GroupID,
-				Name:         r.GroupName,
+				Name:         r.Name(),
 				CategoryID:   &categoryID,
 				Year:         r.GroupYear,
 				Tags:         strings.Join(r.Tags, ","),
