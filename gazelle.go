@@ -24,10 +24,13 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/charles-haynes/discogs"
 	"github.com/charles-haynes/munkres"
 	"github.com/charles-haynes/strsim"
 	"github.com/charles-haynes/whatapi"
@@ -86,15 +89,15 @@ func scoreSize(t1, t2 Torrent) float64 {
 
 // FileSimilarity measures how similar the files are between two torrents
 // with 0.0 being not at all similar, and 1.0 being identical
-func FileSimilarity(t1, t2 Torrent) (float64, error) {
-	if scoreSize(t1, t2) == 1.0 {
+func (t Torrent) FileSimilarity(t2 Torrent) (float64, error) {
+	if scoreSize(t, t2) == 1.0 {
 		return 1.0, nil
 	}
-	if len(t1.Files) < len(t2.Files) {
-		t1, t2 = t2, t1
+	if len(t.Files) < len(t2.Files) {
+		t, t2 = t2, t
 	}
-	var costs = make([][]float64, len(t1.Files))
-	for i, f1 := range t1.Files {
+	var costs = make([][]float64, len(t.Files))
+	for i, f1 := range t.Files {
 		costs[i] = make([]float64, len(t2.Files))
 		for j, f2 := range t2.Files {
 			costs[i][j] = Similarity(f1.Name(), f2.Name())
@@ -107,7 +110,7 @@ func FileSimilarity(t1, t2 Torrent) (float64, error) {
 	a := m.Execute()
 	sumOfSquares := 0.0
 	sum := 0.0
-	for i, f1 := range t1.Files {
+	for i, f1 := range t.Files {
 		if a[i] < 0 {
 			sumOfSquares += 1.0
 			sum += float64(f1.Size)
@@ -154,26 +157,26 @@ func threeWaySim(s1, s2 string) float64 {
 
 // ReleaseSimilarity measures how similar two torrent releases are
 // with 0.0 being not at all similar, and 1.0 being identical
-func ReleaseSimilarity(t1, t2 Torrent) float64 {
+func (t Torrent) ReleaseSimilarity(t2 Torrent) float64 {
 	score := WeightedScore{}
-	if t1.Format != t2.Format {
+	if t.Format != t2.Format {
 		return 0.0
 	}
-	if t1.Encoding != t2.Encoding {
+	if t.Encoding != t2.Encoding {
 		return 0.0
 	}
-	if t1.Media != t2.Media {
+	if t.Media != t2.Media {
 		return 0.0
 	}
-	tYear := t1.Year
-	tRecLab := NullableString(t1.RecordLabel)
-	tCatNum := NullableString(t1.CatalogueNumber)
+	tYear := t.Year
+	tRecLab := NullableString(t.RecordLabel)
+	tCatNum := NullableString(t.CatalogueNumber)
 	tRemTit := ""
-	if t1.Remastered {
-		tYear = t1.RemasterYear
-		tRecLab = t1.RemasterRecordLabel
-		tCatNum = NullableString(t1.RemasterCatalogueNumber)
-		tRemTit = t1.RemasterTitle
+	if t.Remastered {
+		tYear = t.RemasterYear
+		tRecLab = t.RemasterRecordLabel
+		tCatNum = NullableString(t.RemasterCatalogueNumber)
+		tRemTit = t.RemasterTitle
 	}
 	rYear := t2.Year
 	rRecLab := NullableString(t2.RecordLabel)
@@ -199,7 +202,7 @@ func ReleaseSimilarity(t1, t2 Torrent) float64 {
 	score.Update(threeWaySim(tCatNum, rCatNum), 0.50)
 	score.Update(threeWaySim(tRecLab, rRecLab), 0.20)
 	score.Update(threeWaySim(tRemTit, rRemTit), 0.10)
-	score.Update(threeWaySim(t1.ReleaseType(), t2.ReleaseType()), 0.05)
+	score.Update(threeWaySim(t.ReleaseType(), t2.ReleaseType()), 0.05)
 	score.Update(threeWayYear(tYear, rYear), 0.02)
 
 	return score.Score()
@@ -250,26 +253,44 @@ func (a ArtistList) Names() []string {
 	return s
 }
 
+// Role is the name of an artist's role on a release
+type Role string
+
+// Roles maps from roles onto lists of artists
+type Roles map[Role]ArtistList
+
 // Artists is a tracker and a set of artists and their roles
 // usually associated with a group
 type Artists struct {
 	Tracker
-	Artists map[string]ArtistList
+	Roles Roles
+}
+
+// Similarity measures the similarities of two Artists structs,
+// where 0.0 is not at all similar, and 1.0 is identical
+// it is just the similarity of the roles
+func (a Artists) Similarity(a2 Artists) float64 {
+	return a.Roles.Similarity(a2.Roles)
 }
 
 // Names returns a list of the main artists names from an artist list
 func (a Artists) Names() []string {
-	return a.Artists["Artist"].Names()
+	return a.Roles["Artist"].Names()
 }
 
-// Similarity returns how similar two sets of artists are
+// Similarity returns how similar two list of artists are
 // with 0.0 being not at all similar and 1.0 being completely the same
-func (a Artists) Similarity(a2 Artists) float64 {
+func (a ArtistList) Similarity(a2 ArtistList) float64 {
+	// use assignment first?
+	return strsim.ListSimilarity(a.Names(), a2.Names(), Similarity)
+}
+
+// Similarity returns how similar two sets of roles are
+// with 0.0 being not at all similar and 1.0 being completely the same
+func (r Roles) Similarity(r2 Roles) float64 {
 	var ws WeightedScore
-	for c := range a.Artists {
-		ws.Update(strsim.ListSimilarity(
-			a.Artists[c].Names(), a2.Artists[c].Names(),
-			Similarity), 1.0)
+	for c := range r {
+		ws.Update(r[c].Similarity(r2[c]), 1.0)
 	}
 	return ws.Score()
 }
@@ -280,7 +301,7 @@ func (t *Torrent) GetArtists(db *sqlx.DB) error {
 	var artists []struct {
 		ID   int    `db:"id"`
 		Name string `db:"name"`
-		Role string `db:"role"`
+		Role Role   `db:"role"`
 	}
 	err := db.Select(&artists, `
 SELECT ga.id, ga.name, gag.role
@@ -290,12 +311,12 @@ WHERE gag.tracker=? AND gag.groupid=?`, t.Tracker.Name, t.Group.ID)
 	if err != nil {
 		return err
 	}
-	if t.Artists.Artists == nil {
-		t.Artists.Artists = map[string]ArtistList{}
+	if t.Artists.Roles == nil {
+		t.Artists.Roles = map[Role]ArtistList{}
 	}
 	for _, a := range artists {
-		t.Artists.Artists[a.Role] = append(
-			t.Artists.Artists[a.Role], Artist{a.ID, a.Name})
+		t.Artists.Roles[a.Role] = append(
+			t.Artists.Roles[a.Role], Artist{a.ID, a.Name})
 	}
 	return nil
 }
@@ -319,13 +340,13 @@ func (a ArtistList) DisplayName(role string) string {
 // artists, intended to replicate the internal gazelle logic for formatting
 // artist names
 func (a Artists) DisplayName() string {
-	return a.Artists["Artist"].DisplayName("Artists")
+	return a.Roles["Artist"].DisplayName("Artists")
 }
 
 // Update artists just updates each artist in the aggregate
 func (a Artists) Update(tx *sqlx.Tx) error {
-	for _, ar := range a.Artists {
-		for _, as := range ar {
+	for _, r := range a.Roles {
+		for _, as := range r {
 			if err := as.Update(tx, a.Tracker); err != nil {
 				return err
 			}
@@ -336,42 +357,42 @@ func (a Artists) Update(tx *sqlx.Tx) error {
 
 // NewMusicInfo creates Artists from a tracker and whatapi.MusicInfo struct
 func NewMusicInfo(tracker Tracker, mi whatapi.MusicInfo) Artists {
-	artists := map[string]ArtistList{}
-	artists["Composer"] = make([]Artist, len(mi.Composers))
+	roles := Roles{}
+	roles["Composer"] = make([]Artist, len(mi.Composers))
 	for i, m := range mi.Composers {
-		artists["Composer"][i] = Artist{m.ID, m.Name}
+		roles["Composer"][i] = Artist{m.ID, m.Name}
 	}
-	artists["DJ"] = make([]Artist, len(mi.DJ))
+	roles["DJ"] = make([]Artist, len(mi.DJ))
 	for i, m := range mi.DJ {
-		artists["DJ"][i] = Artist{m.ID, m.Name}
+		roles["DJ"][i] = Artist{m.ID, m.Name}
 	}
-	artists["Artist"] = make([]Artist, len(mi.Artists))
+	roles["Artist"] = make([]Artist, len(mi.Artists))
 	for i, m := range mi.Artists {
-		artists["Artist"][i] = Artist{m.ID, m.Name}
+		roles["Artist"][i] = Artist{m.ID, m.Name}
 	}
-	artists["With"] = make([]Artist, len(mi.With))
+	roles["With"] = make([]Artist, len(mi.With))
 	for i, m := range mi.With {
-		artists["With"][i] = Artist{m.ID, m.Name}
+		roles["With"][i] = Artist{m.ID, m.Name}
 	}
-	artists["Conductor"] = make([]Artist, len(mi.Conductor))
+	roles["Conductor"] = make([]Artist, len(mi.Conductor))
 	for i, m := range mi.Conductor {
-		artists["Conductor"][i] = Artist{m.ID, m.Name}
+		roles["Conductor"][i] = Artist{m.ID, m.Name}
 	}
-	artists["RemixedBy"] = make([]Artist, len(mi.RemixedBy))
+	roles["RemixedBy"] = make([]Artist, len(mi.RemixedBy))
 	for i, m := range mi.RemixedBy {
-		artists["RemixedBy"][i] = Artist{m.ID, m.Name}
+		roles["RemixedBy"][i] = Artist{m.ID, m.Name}
 	}
-	artists["Producer"] = make([]Artist, len(mi.Producer))
+	roles["Producer"] = make([]Artist, len(mi.Producer))
 	for i, m := range mi.Producer {
-		artists["Producer"][i] = Artist{m.ID, m.Name}
+		roles["Producer"][i] = Artist{m.ID, m.Name}
 	}
 	return Artists{
 		Tracker: tracker,
-		Artists: artists,
+		Roles:   roles,
 	}
 }
 
-var roles = map[string]string{
+var roleNames = map[string]Role{
 	"1":         "Artist",
 	"2":         "With",
 	"3":         "RemixedBy",
@@ -390,17 +411,17 @@ var roles = map[string]string{
 
 // NewExtendedArtistMap creates Artists from a tracker and a whatapi.ExtendedArtistMap
 func NewExtendedArtistMap(tracker Tracker, am whatapi.ExtendedArtistMap) Artists {
-	a := map[string]ArtistList{}
+	roles := Roles{}
 	for r, m := range am {
-		a[roles[r]] = make([]Artist, len(m))
+		roles[roleNames[r]] = make([]Artist, len(m))
 		for i, ma := range m {
-			a[roles[r]][i] = Artist{
+			roles[roleNames[r]][i] = Artist{
 				ID:   ma.ID,
 				Name: ma.Name,
 			}
 		}
 	}
-	return Artists{tracker, a}
+	return Artists{tracker, roles}
 }
 
 type Group struct {
@@ -492,8 +513,219 @@ func (t *Torrent) Fill(tx *sqlx.Tx) error {
 	return nil
 }
 
+func (t Torrent) byGroup(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent, error) {
+	// search by group only
+	g := strings.Join(disc.Terms(t.Group.Name), " ")
+	if len(g) < 3 {
+		g = strings.ToLower(t.Group.Name)
+	}
+	name := "group " + g
+	params := url.Values{
+		"groupname": {g},
+		"media":     {t.Media},
+		"format":    {t.Format},
+		"encoding":  {t.Encoding},
+	}
+	ts, err := dst.SearchTorrents("", params)
+	if err != nil {
+		return []Torrent{},
+			fmt.Errorf("byGroup: %w", err)
+	}
+	if ts.Pages > 1 {
+		fmt.Printf("#     %s: %s (%d pages)\n",
+			dst.Name, name, ts.Pages)
+		a := disc.Terms(strings.Join(t.Artists.Names(), " "))
+		if len(a) > 0 {
+			n := a[0]
+			params["artistname"] = []string{n}
+			name = fmt.Sprintf("artist/group %s/%s", n, g)
+			ts, err = dst.SearchTorrents("", params)
+			if err != nil {
+				return []Torrent{},
+					fmt.Errorf("byGroup&Artist: %w", err)
+
+			}
+		}
+	}
+	if ts.Pages > 1 {
+		return []Torrent{},
+			fmt.Errorf(
+				"byGroup: too many results. Pages: %d",
+				ts.Pages)
+	}
+	fmt.Printf("##   %s: %s (%d)\n",
+		dst.Name, name, len(ts.Results))
+	return NewTorrentSearch(dst, ts)
+}
+
+func (t Torrent) byArtist(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent, error) {
+	// search by artist only
+	names := t.Artists.Names()
+	if len(names) == 0 {
+		return []Torrent{}, nil
+	}
+	a := strings.Join(disc.Terms(strings.Join(names, " ")), " ")
+	name := "artist " + a
+	params := url.Values{
+		"artistname": {a},
+		"media":      {t.Media},
+		"format":     {t.Format},
+		"encoding":   {t.Encoding},
+	}
+	ts, err := dst.SearchTorrents("", params)
+	if err != nil {
+		return []Torrent{},
+			fmt.Errorf("byArtist: %s", err)
+
+	}
+	if ts.Pages > 1 {
+		fmt.Printf("#     %s: %s (%d pages)\n",
+			dst.Name, name, ts.Pages)
+		g := disc.Terms(t.Group.Name)
+		if len(g) > 0 {
+			n := g[0]
+			params["groupname"] = []string{n}
+			name = fmt.Sprintf("artist/group %s/%s", a, n)
+			ts, err = dst.SearchTorrents("", params)
+			if err != nil {
+				return []Torrent{},
+					fmt.Errorf("byArtist&Group: %w", err)
+
+			}
+		}
+	}
+	if ts.Pages > 1 {
+		return []Torrent{},
+			fmt.Errorf(
+				"byArtist: too many results. Pages: %d",
+				ts.Pages)
+	}
+	fmt.Printf("##   %s: %s (%d)\n", dst.Name, name, len(ts.Results))
+	return NewTorrentSearch(dst, ts)
+}
+
+// Similarity measures how similar two groups are
+// with 0.0 for not at all similar, and 1.0 as the same
+func (g Group) Similarity(g2 Group) float64 {
+	// find the best candidate group(s)
+	var sc WeightedScore
+	sc.Update(Similarity(g.Name, g2.Name), 1.0)
+	sc.Update(threeWayYear(g.Year, g2.Year), 0.25)
+	sc.Update(g.Artists.Similarity(g2.Artists), 1.0)
+	return sc.Score()
+}
+
+func (t Torrent) bestRelease(tr []Torrent) (o Torrent, p float64) {
+	ws := WeightedScore{}
+	l := 0
+	p = 0.0
+	for _, r := range tr {
+		sc := t.Group.Similarity(r.Group)
+		if sc < p {
+			continue
+		}
+		if sc > p {
+			l = 0
+		}
+		tr[l] = r
+		l++
+		fmt.Printf("#%%       %6.3f %s | %s - %s (%d)\n",
+			sc, t.Artists.DisplayName(),
+			r.Artists.DisplayName(), r.Name, r.Group.Year)
+		p = sc
+	}
+	if l == 0 || p < 0.5 {
+		return Torrent{}, 0.0
+	}
+	// found a group of equal weights, now find the best matching release
+	// check that the tracks look similar?
+	ws.Update(p, 1.0)
+	p = 0.0
+	for _, r := range tr[:l] {
+		if sc := t.ReleaseSimilarity(r); sc > p {
+			p = sc
+			o = r
+		}
+	}
+	if p == 0.0 {
+		return Torrent{}, 0.0
+	}
+	fmt.Printf("#%%       %6.3f [(%d) %s/%s/%s] | [(%d) %s/%s/%s]\n",
+		p,
+		t.RemasterYear,
+		t.RemasterRecordLabel,
+		NullableString(t.RemasterCatalogueNumber),
+		t.RemasterTitle,
+		o.RemasterYear,
+		o.RemasterRecordLabel,
+		NullableString(o.RemasterCatalogueNumber),
+		o.RemasterTitle)
+	ws.Update(p, 0.5) // the release match isn't as important as group
+	return o, ws.Score()
+}
+
+func (t Torrent) isSeeding() bool {
+	_, err := os.Stat(filepath.Join(
+		"/home/haynes/downloads",
+		t.Path,
+		NullableString(t.FilePath)))
+	if err == nil {
+		fmt.Printf("### already seeding %s %s\n",
+			t.ShortName(),
+			filepath.Join(
+				t.Path,
+				NullableString(t.FilePath)))
+		return true
+	}
+	return false
+}
+
+// Find tries to find the equivalent of this torrent on another tracker
+// it returns a candidate, a probability, and if there was an error
+func (t Torrent) Find(db *sqlx.DB, disc discogs.DB, dst Tracker) (
+	tt Torrent, p float64, err error) {
+	fmt.Printf("### find on %s for  %s\n", dst.Name, t.String())
+	fmt.Printf("##   https://%s/torrents.php?torrentid=%d\n",
+		t.Host, t.ID)
+	// check candidates by looking at file lists?
+	// (you only get file lists on torrent, torrentgroup)
+
+	// search by group name
+	// search by artist
+	// look by label and catalogue number
+	// look by torrent file
+	var (
+		at      Torrent
+		ap      float64
+		tr, atr []Torrent
+	)
+	if err == nil {
+		tr, err = t.byGroup(db, disc, dst)
+	}
+	if err == nil {
+		tt, p = t.bestRelease(tr)
+	}
+	if err == nil {
+		atr, err = t.byArtist(db, disc, dst)
+	}
+	if err == nil {
+		at, ap = t.bestRelease(atr)
+		if ap > p {
+			p = ap
+			tt = at
+		}
+	}
+	if err != nil {
+		err = fmt.Errorf("Find: %w", err)
+		return Torrent{}, 0.0, err
+	}
+	return tt, p, nil
+}
+
+// UpdateArtistsGroups updates the artists_groups table in the db for
+// the artists in the group
 func (g Group) UpdateArtistsGroups(tx *sqlx.Tx) error {
-	for r, as := range g.Artists.Artists {
+	for r, as := range g.Artists.Roles {
 		for _, a := range as {
 			_, err := tx.Exec(`INSERT OR REPLACE INTO artists_groups VALUES (?,?,?,?)`,
 				g.Tracker.Name, a.ID, g.ID, r)
@@ -505,6 +737,7 @@ func (g Group) UpdateArtistsGroups(tx *sqlx.Tx) error {
 	return nil
 }
 
+// Bint converts a boolean into an int. true = 1, false = 0
 func Bint(b bool) int {
 	if b {
 		return 1
@@ -787,7 +1020,7 @@ func NewGroupSearchResult(tracker Tracker, srs whatapi.TorrentSearchResultStruct
 		}
 	}
 	return Group{
-		Artists: Artists{tracker, map[string]ArtistList{"Artist": al}},
+		Artists: Artists{tracker, map[Role]ArtistList{"Artist": al}},
 		ID:      srs.GroupID,
 		Name:    srs.Name(),
 		Year:    srs.GroupYear,
@@ -1102,7 +1335,7 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 			}
 			a := Artists{
 				Tracker: tracker,
-				Artists: map[string]ArtistList{
+				Roles: map[Role]ArtistList{
 					"Artist": {{Name: r.Artist}},
 				},
 			}

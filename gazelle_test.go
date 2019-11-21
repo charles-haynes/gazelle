@@ -254,9 +254,9 @@ func (m MockWhatAPI) Logout() error {
 	m.Called()
 	return nil
 }
-func (m MockWhatAPI) GetAccount() (a whatapi.Account, e error) {
+func (m MockWhatAPI) GetAccount() error {
 	m.Called()
-	return
+	return nil
 }
 func (m MockWhatAPI) GetMailbox(params url.Values) (M whatapi.Mailbox, e error) {
 	m.Called()
@@ -413,7 +413,7 @@ func TestArtistUpdate(t *testing.T) {
 
 func TestArtistsNames(t *testing.T) {
 	a := gazelle.Artists{
-		Artists: map[string]gazelle.ArtistList{
+		Roles: gazelle.Roles{
 			"Artist": {{1, "artist1"}, {2, "artist2"}},
 		},
 	}
@@ -433,9 +433,7 @@ func TestArtistsGetArtists(t *testing.T) {
 			ID: 2,
 		},
 	}
-	expectedArtists := map[string]gazelle.ArtistList{
-		"Role": {{1, "artist"}},
-	}
+	expectedRoles := gazelle.Roles{"Role": {{1, "artist"}}}
 	db := NewTestDB()
 	_, err := db.Exec(`
 INSERT INTO artists (tracker,id,name) VALUES("tracker",1,"artist");
@@ -449,28 +447,28 @@ INSERT INTO artists_groups VALUES("tracker",1,2,"Role");
 	if err != nil {
 		t.Error(err)
 	}
-	if !reflect.DeepEqual(expectedArtists, to.Artists.Artists) {
-		t.Errorf("expected %v got %v", expectedArtists, to.Artists.Artists)
+	if !reflect.DeepEqual(expectedRoles, to.Artists.Roles) {
+		t.Errorf("expected %v got %v", expectedRoles, to.Artists.Roles)
 	}
 }
 
 func TestArtistsDisplayName(t *testing.T) {
-	a := gazelle.Artists{Artists: map[string]gazelle.ArtistList{}}
+	a := gazelle.Artists{Roles: gazelle.Roles{}}
 	if r := a.DisplayName(); r != "" {
 		t.Errorf("expected display name \"\", got \"%s\"", r)
 	}
-	a.Artists["Artist"] = append(
-		a.Artists["Artist"], gazelle.Artist{1, "Artist1"})
+	a.Roles["Artist"] = append(
+		a.Roles["Artist"], gazelle.Artist{1, "Artist1"})
 	if r := a.DisplayName(); r != "Artist1" {
 		t.Errorf("expected display name foo, got %s", r)
 	}
-	a.Artists["Artist"] = append(
-		a.Artists["Artist"], gazelle.Artist{2, "Artist2"})
+	a.Roles["Artist"] = append(
+		a.Roles["Artist"], gazelle.Artist{2, "Artist2"})
 	if r := a.DisplayName(); r != "Artist1 & Artist2" {
 		t.Errorf("expected display name foo & bar, got %s", r)
 	}
-	a.Artists["Artist"] = append(
-		a.Artists["Artist"], gazelle.Artist{3, "Artist3"})
+	a.Roles["Artist"] = append(
+		a.Roles["Artist"], gazelle.Artist{3, "Artist3"})
 	if r := a.DisplayName(); r != "Various Artists" {
 		t.Errorf("expected display Various Artists, got %s", r)
 	}
@@ -484,7 +482,7 @@ func TestArtistsUpdate(t *testing.T) {
 	}
 	a := gazelle.Artists{
 		Tracker: expectTracker,
-		Artists: map[string]gazelle.ArtistList{
+		Roles: gazelle.Roles{
 			"Artist": {{1, "artist1"}, {2, "artist2"}},
 		},
 	}
@@ -498,8 +496,8 @@ func TestArtistsUpdate(t *testing.T) {
 		t.Error(err)
 	}
 	expected := gazelle.ArtistList{{1, "artist1"}, {2, "artist2"}}
-	if !reflect.DeepEqual(expected, a.Artists["Artist"]) {
-		t.Errorf("expected %v got %v", expected, a.Artists["Artist"])
+	if !reflect.DeepEqual(expected, a.Roles["Artist"]) {
+		t.Errorf("expected %v got %v", expected, a.Roles["Artist"])
 	}
 }
 
@@ -511,7 +509,7 @@ func TestNewMusicInfo(t *testing.T) {
 	}
 	expected := gazelle.Artists{
 		Tracker: tracker,
-		Artists: map[string]gazelle.ArtistList{
+		Roles: gazelle.Roles{
 			"Composer":  {},
 			"DJ":        {},
 			"Artist":    {{1, "artist1"}, {2, "artist2"}},
@@ -538,7 +536,7 @@ func TestNewExtendedArtistMap(t *testing.T) {
 	}
 	expected := gazelle.Artists{
 		Tracker: tracker,
-		Artists: map[string]gazelle.ArtistList{
+		Roles: gazelle.Roles{
 			"Artist": {{1, "artist1"}, {2, "artist2"}},
 			"With":   {{3, "artist3"}},
 		},
@@ -741,7 +739,7 @@ func TestGroupUpdateArtistsGroupsNoArtists(t *testing.T) {
 	}
 	g := gazelle.Group{
 		Artists: gazelle.Artists{
-			Artists: map[string]gazelle.ArtistList{},
+			Roles: gazelle.Roles{},
 		},
 	}
 	err = g.UpdateArtistsGroups(tx)
@@ -774,7 +772,7 @@ INSERT INTO groups VALUES("tracker",NULL,NULL,3,"baz",0,"","","",NULL,NULL,NULL,
 			Tracker: gazelle.Tracker{
 				Name: "tracker",
 			},
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"role": {{1, "artist1"}, {2, "artist2"}},
 			},
 		},
@@ -832,7 +830,7 @@ func TestGroupUpdate(t *testing.T) {
 			Tracker: gazelle.Tracker{
 				Name: "tracker",
 			},
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"role": {{1, "artist1"}, {2, "artist2"}},
 			},
 		},
@@ -896,15 +894,15 @@ func ArtistsEqual(a1, a2 gazelle.Artists) error {
 	if !reflect.DeepEqual(a1.Tracker, a2.Tracker) {
 		return fmt.Errorf("Tracker")
 	}
-	if len(a1.Artists) != len(a2.Artists) {
-		return fmt.Errorf("len(Artists)")
+	if len(a1.Roles) != len(a2.Roles) {
+		return fmt.Errorf("len(Roles)")
 	}
-	for i := range a1.Artists {
-		if !reflect.DeepEqual(a1.Artists[i], a2.Artists[i]) {
-			return fmt.Errorf("Artists[%s]", i)
+	for i := range a1.Roles {
+		if !reflect.DeepEqual(a1.Roles[i], a2.Roles[i]) {
+			return fmt.Errorf("Roles[%s]", i)
 		}
 	}
-	return fmt.Errorf("unknown: did you leave a field off Artists?")
+	return fmt.Errorf("unknown: did you leave a field off Roles?")
 }
 
 func GroupsEqual(g1, g2 gazelle.Group) error {
@@ -1085,7 +1083,7 @@ var (
 	expectTracker = gazelle.Tracker{Name: "tracker"}
 	expectArtists = gazelle.Artists{
 		Tracker: expectTracker,
-		Artists: map[string]gazelle.ArtistList{
+		Roles: gazelle.Roles{
 			"Artist":    {{4, "artist4"}, {5, "artist5"}},
 			"Composer":  {},
 			"Conductor": {},
@@ -1451,7 +1449,7 @@ func TestTorrentStringNotRemastered(t *testing.T) {
 						1: "releasetype1",
 					},
 				},
-				Artists: map[string]gazelle.ArtistList{
+				Roles: gazelle.Roles{
 					"Artist": {{1, "artist"}},
 				},
 			},
@@ -1486,7 +1484,7 @@ func TestTorrentStringRemastered(t *testing.T) {
 						1: "releasetype1",
 					},
 				},
-				Artists: map[string]gazelle.ArtistList{
+				Roles: gazelle.Roles{
 					"Artist": {{1, "artist"}},
 				},
 			},
@@ -1564,7 +1562,7 @@ func TestNewGroupSearchResultEmptyTorrents(t *testing.T) {
 	}
 	expected := gazelle.Group{
 		Artists: gazelle.Artists{
-			Artists: map[string]gazelle.ArtistList{"Artist": {}},
+			Roles: gazelle.Roles{"Artist": {}},
 		},
 	}
 	if err := GroupsEqual(expected, r); err != nil {
@@ -1593,7 +1591,7 @@ func TestNewGroupSearchResultNonEmptyTorrents(t *testing.T) {
 	}
 	expected := gazelle.Group{
 		Artists: gazelle.Artists{
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"Artist": {{1, "artist1"}, {2, "artist2"}},
 			},
 		},
@@ -1774,7 +1772,7 @@ func TestNewTorrentSearch(t *testing.T) {
 					Tracker: gazelle.Tracker{
 						Name: "tracker",
 					},
-					Artists: map[string]gazelle.ArtistList{
+					Roles: gazelle.Roles{
 						"Artist": {
 							{1, "artist1"},
 							{2, "artist2"},
@@ -1812,7 +1810,7 @@ func TestNewTorrentSearch(t *testing.T) {
 					Tracker: gazelle.Tracker{
 						Name: "tracker",
 					},
-					Artists: map[string]gazelle.ArtistList{
+					Roles: gazelle.Roles{
 						"Artist": {
 							{1, "artist1"},
 							{2, "artist2"},
@@ -2036,14 +2034,14 @@ func TestNewArtist(t *testing.T) {
 	}
 	artists2 := gazelle.Artists{
 		Tracker: tracker,
-		Artists: map[string]gazelle.ArtistList{
+		Roles: gazelle.Roles{
 			"Artist": {{21, "artist21"}, {22, "artist22"}},
 			"With":   {{23, "artist23"}},
 		},
 	}
 	artists3 := gazelle.Artists{
 		Tracker: tracker,
-		Artists: map[string]gazelle.ArtistList{
+		Roles: gazelle.Roles{
 			"Artist": {{31, "artist31"}, {32, "artist32"}},
 			"With":   {{33, "artist33"}},
 		},
@@ -2531,7 +2529,7 @@ func TestNewGetTorrentStructEmpty(t *testing.T) {
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: expectTracker,
-				Artists: map[string]gazelle.ArtistList{
+				Roles: gazelle.Roles{
 					"Composer":  {},
 					"DJ":        {},
 					"Artist":    {},
@@ -2605,7 +2603,7 @@ var (
 	jsonGroup = gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: expectTracker,
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"Artist":    {{ID: 1, Name: "artist1"}, {ID: 2, Name: "artist2"}},
 				"Composer":  {},
 				"Conductor": {},
@@ -2634,7 +2632,7 @@ var (
 	jsonGroup2 = gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: expectTracker,
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"Artist":    {{1, "artist1"}, {2, "artist2"}},
 				"Composer":  {},
 				"Conductor": {},
@@ -2897,7 +2895,7 @@ func TestTrackerGetArtist(t *testing.T) {
 	g3 := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"Artist":    {{1, "name"}},
 				"With":      {{2, "name2"}, {3, "name3"}},
 				"Composer":  {},
@@ -2922,7 +2920,7 @@ func TestTrackerGetArtist(t *testing.T) {
 	g4 := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"Artist":    {{41, "artist41"}},
 				"Composer":  {},
 				"DJ":        {},
@@ -3083,7 +3081,7 @@ func TestTrackerGetArtistByName(t *testing.T) {
 	g3 := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"Artist":    {{1, "name"}},
 				"With":      {{2, "name2"}, {3, "name3"}},
 				"Composer":  {},
@@ -3108,7 +3106,7 @@ func TestTrackerGetArtistByName(t *testing.T) {
 	g4 := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"Artist":    {{41, "artist41"}},
 				"Composer":  {},
 				"DJ":        {},
@@ -3318,7 +3316,7 @@ func TestTrackerSearch(t *testing.T) {
 	g := gazelle.Group{
 		Artists: gazelle.Artists{
 			Tracker: tracker,
-			Artists: map[string]gazelle.ArtistList{
+			Roles: gazelle.Roles{
 				"Artist": {{111, "artist111"}},
 			},
 		},
@@ -3430,7 +3428,7 @@ func TestNewTopTenTorrents(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string]gazelle.ArtistList{
+					Roles: gazelle.Roles{
 						"Artist": {{0, "artist"}},
 					},
 				},
@@ -3489,7 +3487,7 @@ func TestTrackerTop10(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string]gazelle.ArtistList{
+					Roles: gazelle.Roles{
 						"Artist": {{0, "artist1"}},
 					},
 				},
@@ -3521,7 +3519,7 @@ func TestTrackerTop10(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string]gazelle.ArtistList{
+					Roles: gazelle.Roles{
 						"Artist": {{0, "artist8"}},
 					},
 				},
@@ -3553,7 +3551,7 @@ func TestTrackerTop10(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string]gazelle.ArtistList{
+					Roles: gazelle.Roles{
 						"Artist": {{0, "artist20"}},
 					},
 				},
@@ -3585,7 +3583,7 @@ func TestTrackerTop10(t *testing.T) {
 			Group: gazelle.Group{
 				Artists: gazelle.Artists{
 					Tracker: tracker,
-					Artists: map[string]gazelle.ArtistList{
+					Roles: gazelle.Roles{
 						"Artist": {{0, "artist38"}},
 					},
 				},
