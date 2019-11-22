@@ -275,7 +275,7 @@ func (a Artists) Similarity(a2 Artists) float64 {
 
 // Names returns a list of the main artists names from an artist list
 func (a Artists) Names() []string {
-	return a.Roles["Artist"].Names()
+	return a.Roles["Artists"].Names()
 }
 
 // Similarity returns how similar two list of artists are
@@ -340,7 +340,42 @@ func (a ArtistList) DisplayName(role string) string {
 // artists, intended to replicate the internal gazelle logic for formatting
 // artist names
 func (a Artists) DisplayName() string {
-	return a.Roles["Artist"].DisplayName("Artists")
+	var (
+		artists    = a.Roles["Artists"]
+		composers  = a.Roles["Composers"]
+		conductors = a.Roles["Conductor"]
+		djs        = a.Roles["DJ"]
+		cArtist    = len(artists)
+		cComposer  = len(composers)
+		cConductor = len(conductors)
+		cDJ        = len(djs)
+	)
+	if (cArtist+cConductor+cDJ) == 0 && cComposer == 0 {
+		return ""
+	}
+	d := ""
+	dComposers := ""
+	if cComposer < 3 {
+		d = composers.DisplayName("Composers")
+		if cComposer > 0 && cArtist > 0 {
+			d += " performed by "
+		}
+		dComposers = d
+	}
+	d += artists.DisplayName("Artists")
+	if cConductor > 0 && (cArtist+cComposer > 0) && (cComposer < 3 || cArtist > 0) {
+		d += " under "
+	}
+	d += conductors.DisplayName("Conductors")
+	if (cComposer > 0) && (cArtist+cConductor > 3) && (cArtist > 1 && cConductor > 1) {
+		d = dComposers + "Various Artists"
+	} else if cComposer > 2 && (cArtist+cConductor == 0) {
+		d = "Various Composers"
+	}
+	if cDJ > 0 {
+		d = djs.DisplayName("DJs")
+	}
+	return d
 }
 
 // Update artists just updates each artist in the aggregate
@@ -358,17 +393,17 @@ func (a Artists) Update(tx *sqlx.Tx) error {
 // NewMusicInfo creates Artists from a tracker and whatapi.MusicInfo struct
 func NewMusicInfo(tracker Tracker, mi whatapi.MusicInfo) Artists {
 	roles := Roles{}
-	roles["Composer"] = make([]Artist, len(mi.Composers))
+	roles["Composers"] = make([]Artist, len(mi.Composers))
 	for i, m := range mi.Composers {
-		roles["Composer"][i] = Artist{m.ID, m.Name}
+		roles["Composers"][i] = Artist{m.ID, m.Name}
 	}
 	roles["DJ"] = make([]Artist, len(mi.DJ))
 	for i, m := range mi.DJ {
 		roles["DJ"][i] = Artist{m.ID, m.Name}
 	}
-	roles["Artist"] = make([]Artist, len(mi.Artists))
+	roles["Artists"] = make([]Artist, len(mi.Artists))
 	for i, m := range mi.Artists {
-		roles["Artist"][i] = Artist{m.ID, m.Name}
+		roles["Artists"][i] = Artist{m.ID, m.Name}
 	}
 	roles["With"] = make([]Artist, len(mi.With))
 	for i, m := range mi.With {
@@ -393,19 +428,19 @@ func NewMusicInfo(tracker Tracker, mi whatapi.MusicInfo) Artists {
 }
 
 var roleNames = map[string]Role{
-	"1":         "Artist",
+	"1":         "Artists",
+	"Artists":   "Artists",
 	"2":         "With",
-	"3":         "RemixedBy",
-	"4":         "Composer",
-	"5":         "Conductor",
-	"6":         "DJ",
-	"7":         "Producer",
-	"Artist":    "Artist",
 	"With":      "With",
+	"3":         "RemixedBy",
 	"RemixedBy": "RemixedBy",
-	"Composer":  "Composer",
+	"4":         "Composers",
+	"Composers": "Composers",
+	"5":         "Conductor",
 	"Conductor": "Conductor",
+	"6":         "DJ",
 	"DJ":        "DJ",
+	"7":         "Producer",
 	"Producer":  "Producer",
 }
 
@@ -532,7 +567,7 @@ func (t Torrent) byGroup(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent, 
 			fmt.Errorf("byGroup: %w", err)
 	}
 	if ts.Pages > 1 {
-		fmt.Printf("#     %s: %s (%d pages)\n",
+		fmt.Printf("#    %s: %s (%d pages)\n",
 			dst.Name, name, ts.Pages)
 		a := disc.Terms(strings.Join(t.Artists.Names(), " "))
 		if len(a) > 0 {
@@ -629,19 +664,18 @@ func (t Torrent) bestRelease(tr []Torrent) (o Torrent, p float64) {
 		}
 		tr[l] = r
 		l++
-		fmt.Printf("#%%       %6.3f %s | %s - %s (%d)\n",
-			sc, t.Artists.DisplayName(),
-			r.Artists.DisplayName(), r.Name, r.Group.Year)
 		p = sc
 	}
 	if l == 0 || p < 0.5 {
 		return Torrent{}, 0.0
 	}
 	// found a group of equal weights, now find the best matching release
+	fmt.Printf("#      %6.3f\n", p)
 	// check that the tracks look similar?
 	ws.Update(p, 1.0)
 	p = 0.0
 	for _, r := range tr[:l] {
+		fmt.Printf("#        | %s\n", r.String())
 		if sc := t.ReleaseSimilarity(r); sc > p {
 			p = sc
 			o = r
@@ -650,16 +684,7 @@ func (t Torrent) bestRelease(tr []Torrent) (o Torrent, p float64) {
 	if p == 0.0 {
 		return Torrent{}, 0.0
 	}
-	fmt.Printf("#%%       %6.3f [(%d) %s/%s/%s] | [(%d) %s/%s/%s]\n",
-		p,
-		t.RemasterYear,
-		t.RemasterRecordLabel,
-		NullableString(t.RemasterCatalogueNumber),
-		t.RemasterTitle,
-		o.RemasterYear,
-		o.RemasterRecordLabel,
-		NullableString(o.RemasterCatalogueNumber),
-		o.RemasterTitle)
+	fmt.Printf("#          %6.3f %s | %s\n", p, t.Remaster(), o.Remaster())
 	ws.Update(p, 0.5) // the release match isn't as important as group
 	return o, ws.Score()
 }
@@ -684,7 +709,7 @@ func (t Torrent) isSeeding() bool {
 // it returns a candidate, a probability, and if there was an error
 func (t Torrent) Find(db *sqlx.DB, disc discogs.DB, dst Tracker) (
 	tt Torrent, p float64, err error) {
-	fmt.Printf("### find on %s for  %s\n", dst.Name, t.String())
+	fmt.Printf("### searching %s for %s\n", dst.Name, t.String())
 	fmt.Printf("##   https://%s/torrents.php?torrentid=%d\n",
 		t.Host, t.ID)
 	// check candidates by looking at file lists?
@@ -956,20 +981,24 @@ WHERE tracker=? AND torrentid=?`, t.Tracker.Name, t.ID)
 	return err
 }
 
-func (t *Torrent) String() string {
-	// TODO: use a template?
-	remaster := ""
-	if t.Remastered {
-		remaster = fmt.Sprintf("{(%4d) %s/%s/%s}",
-			t.RemasterYear, t.RemasterRecordLabel,
-			NullableString(t.RemasterCatalogueNumber),
-			t.RemasterTitle)
+// Remaster returns a printable form of the torrents remaster information
+// or an empty string if not remastered
+func (t *Torrent) Remaster() string {
+	if !t.Remastered {
+		return ""
 	}
+	return fmt.Sprintf("{(%4d) %s/%s/%s}",
+		t.RemasterYear, t.RemasterRecordLabel,
+		NullableString(t.RemasterCatalogueNumber),
+		t.RemasterTitle)
+}
+
+func (t *Torrent) String() string {
 	return fmt.Sprintf("%s: %s - %s (%04d) [%s %s %s]%s [%s]",
 		t.ShortName(),
-		strings.Join(t.Names(), ","), t.Group.Name, t.Year,
+		t.Artists.DisplayName(), t.Group.Name, t.Year,
 		t.Media, t.Format, t.Encoding,
-		remaster, t.ReleaseType())
+		t.Remaster(), t.ReleaseType())
 }
 
 func NullableString(s *string) string {
@@ -1020,7 +1049,7 @@ func NewGroupSearchResult(tracker Tracker, srs whatapi.TorrentSearchResultStruct
 		}
 	}
 	return Group{
-		Artists: Artists{tracker, map[Role]ArtistList{"Artist": al}},
+		Artists: Artists{tracker, Roles{"Artists": al}},
 		ID:      srs.GroupID,
 		Name:    srs.Name(),
 		Year:    srs.GroupYear,
@@ -1335,8 +1364,8 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 			}
 			a := Artists{
 				Tracker: tracker,
-				Roles: map[Role]ArtistList{
-					"Artist": {{Name: r.Artist}},
+				Roles: Roles{
+					"Artists": {{Name: r.Artist}},
 				},
 			}
 			rt, err := strconv.Atoi(r.ReleaseType)

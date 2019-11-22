@@ -414,7 +414,7 @@ func TestArtistUpdate(t *testing.T) {
 func TestArtistsNames(t *testing.T) {
 	a := gazelle.Artists{
 		Roles: gazelle.Roles{
-			"Artist": {{1, "artist1"}, {2, "artist2"}},
+			"Artists": {{1, "artist1"}, {2, "artist2"}},
 		},
 	}
 	res := a.Names()
@@ -457,18 +457,18 @@ func TestArtistsDisplayName(t *testing.T) {
 	if r := a.DisplayName(); r != "" {
 		t.Errorf("expected display name \"\", got \"%s\"", r)
 	}
-	a.Roles["Artist"] = append(
-		a.Roles["Artist"], gazelle.Artist{1, "Artist1"})
+	a.Roles["Artists"] = append(
+		a.Roles["Artists"], gazelle.Artist{1, "Artist1"})
 	if r := a.DisplayName(); r != "Artist1" {
 		t.Errorf("expected display name foo, got %s", r)
 	}
-	a.Roles["Artist"] = append(
-		a.Roles["Artist"], gazelle.Artist{2, "Artist2"})
+	a.Roles["Artists"] = append(
+		a.Roles["Artists"], gazelle.Artist{2, "Artist2"})
 	if r := a.DisplayName(); r != "Artist1 & Artist2" {
 		t.Errorf("expected display name foo & bar, got %s", r)
 	}
-	a.Roles["Artist"] = append(
-		a.Roles["Artist"], gazelle.Artist{3, "Artist3"})
+	a.Roles["Artists"] = append(
+		a.Roles["Artists"], gazelle.Artist{3, "Artist3"})
 	if r := a.DisplayName(); r != "Various Artists" {
 		t.Errorf("expected display Various Artists, got %s", r)
 	}
@@ -510,9 +510,9 @@ func TestNewMusicInfo(t *testing.T) {
 	expected := gazelle.Artists{
 		Tracker: tracker,
 		Roles: gazelle.Roles{
-			"Composer":  {},
+			"Composers": {},
 			"DJ":        {},
-			"Artist":    {{1, "artist1"}, {2, "artist2"}},
+			"Artists":   {{1, "artist1"}, {2, "artist2"}},
 			"With":      {{3, "artist3"}},
 			"Conductor": {},
 			"RemixedBy": {},
@@ -537,8 +537,8 @@ func TestNewExtendedArtistMap(t *testing.T) {
 	expected := gazelle.Artists{
 		Tracker: tracker,
 		Roles: gazelle.Roles{
-			"Artist": {{1, "artist1"}, {2, "artist2"}},
-			"With":   {{3, "artist3"}},
+			"Artists": {{1, "artist1"}, {2, "artist2"}},
+			"With":    {{3, "artist3"}},
 		},
 	}
 	a := gazelle.NewExtendedArtistMap(tracker, am)
@@ -1084,8 +1084,8 @@ var (
 	expectArtists = gazelle.Artists{
 		Tracker: expectTracker,
 		Roles: gazelle.Roles{
-			"Artist":    {{4, "artist4"}, {5, "artist5"}},
-			"Composer":  {},
+			"Artists":   {{4, "artist4"}, {5, "artist5"}},
+			"Composers": {},
 			"Conductor": {},
 			"DJ":        {},
 			"Producer":  {},
@@ -1450,7 +1450,7 @@ func TestTorrentStringNotRemastered(t *testing.T) {
 					},
 				},
 				Roles: gazelle.Roles{
-					"Artist": {{1, "artist"}},
+					"Artists": {{1, "artist"}},
 				},
 			},
 			Year:         1234,
@@ -1485,7 +1485,7 @@ func TestTorrentStringRemastered(t *testing.T) {
 					},
 				},
 				Roles: gazelle.Roles{
-					"Artist": {{1, "artist"}},
+					"Artists": {{1, "artist"}},
 				},
 			},
 			Year:         1234,
@@ -1562,7 +1562,7 @@ func TestNewGroupSearchResultEmptyTorrents(t *testing.T) {
 	}
 	expected := gazelle.Group{
 		Artists: gazelle.Artists{
-			Roles: gazelle.Roles{"Artist": {}},
+			Roles: gazelle.Roles{"Artists": {}},
 		},
 	}
 	if err := GroupsEqual(expected, r); err != nil {
@@ -1592,7 +1592,7 @@ func TestNewGroupSearchResultNonEmptyTorrents(t *testing.T) {
 	expected := gazelle.Group{
 		Artists: gazelle.Artists{
 			Roles: gazelle.Roles{
-				"Artist": {{1, "artist1"}, {2, "artist2"}},
+				"Artists": {{1, "artist1"}, {2, "artist2"}},
 			},
 		},
 		ID:           3,
@@ -1773,7 +1773,7 @@ func TestNewTorrentSearch(t *testing.T) {
 						Name: "tracker",
 					},
 					Roles: gazelle.Roles{
-						"Artist": {
+						"Artists": {
 							{1, "artist1"},
 							{2, "artist2"},
 						},
@@ -1811,7 +1811,7 @@ func TestNewTorrentSearch(t *testing.T) {
 						Name: "tracker",
 					},
 					Roles: gazelle.Roles{
-						"Artist": {
+						"Artists": {
 							{1, "artist1"},
 							{2, "artist2"},
 						},
@@ -1943,7 +1943,7 @@ func TestNewArtist(t *testing.T) {
 					{22, "artist22", 222},
 				},
 				ExtendedArtists: whatapi.ExtendedArtistMap{
-					"Artist": []whatapi.ArtistAlias{
+					"Artists": []whatapi.ArtistAlias{
 						{21, "artist21", 211},
 						{22, "artist22", 222},
 					},
@@ -2017,7 +2017,7 @@ func TestNewArtist(t *testing.T) {
 					{32, "artist32", 322},
 				},
 				ExtendedArtists: whatapi.ExtendedArtistMap{
-					"Artist": []whatapi.ArtistAlias{
+					"Artists": []whatapi.ArtistAlias{
 						{31, "artist31", 311},
 						{32, "artist32", 322},
 					},
@@ -2035,15 +2035,15 @@ func TestNewArtist(t *testing.T) {
 	artists2 := gazelle.Artists{
 		Tracker: tracker,
 		Roles: gazelle.Roles{
-			"Artist": {{21, "artist21"}, {22, "artist22"}},
-			"With":   {{23, "artist23"}},
+			"Artists": {{21, "artist21"}, {22, "artist22"}},
+			"With":    {{23, "artist23"}},
 		},
 	}
 	artists3 := gazelle.Artists{
 		Tracker: tracker,
 		Roles: gazelle.Roles{
-			"Artist": {{31, "artist31"}, {32, "artist32"}},
-			"With":   {{33, "artist33"}},
+			"Artists": {{31, "artist31"}, {32, "artist32"}},
+			"With":    {{33, "artist33"}},
 		},
 	}
 	group2 := gazelle.Group{
@@ -2530,9 +2530,9 @@ func TestNewGetTorrentStructEmpty(t *testing.T) {
 			Artists: gazelle.Artists{
 				Tracker: expectTracker,
 				Roles: gazelle.Roles{
-					"Composer":  {},
+					"Composers": {},
 					"DJ":        {},
-					"Artist":    {},
+					"Artists":   {},
 					"With":      {},
 					"Conductor": {},
 					"RemixedBy": {},
@@ -2604,8 +2604,8 @@ var (
 		Artists: gazelle.Artists{
 			Tracker: expectTracker,
 			Roles: gazelle.Roles{
-				"Artist":    {{ID: 1, Name: "artist1"}, {ID: 2, Name: "artist2"}},
-				"Composer":  {},
+				"Artists":   {{ID: 1, Name: "artist1"}, {ID: 2, Name: "artist2"}},
+				"Composers": {},
 				"Conductor": {},
 				"DJ":        {},
 				"Producer":  {},
@@ -2633,8 +2633,8 @@ var (
 		Artists: gazelle.Artists{
 			Tracker: expectTracker,
 			Roles: gazelle.Roles{
-				"Artist":    {{1, "artist1"}, {2, "artist2"}},
-				"Composer":  {},
+				"Artists":   {{1, "artist1"}, {2, "artist2"}},
+				"Composers": {},
 				"Conductor": {},
 				"DJ":        {},
 				"Producer":  {},
@@ -2896,9 +2896,9 @@ func TestTrackerGetArtist(t *testing.T) {
 		Artists: gazelle.Artists{
 			Tracker: tracker,
 			Roles: gazelle.Roles{
-				"Artist":    {{1, "name"}},
+				"Artists":   {{1, "name"}},
 				"With":      {{2, "name2"}, {3, "name3"}},
-				"Composer":  {},
+				"Composers": {},
 				"DJ":        {},
 				"Conductor": {},
 				"RemixedBy": {},
@@ -2921,8 +2921,8 @@ func TestTrackerGetArtist(t *testing.T) {
 		Artists: gazelle.Artists{
 			Tracker: tracker,
 			Roles: gazelle.Roles{
-				"Artist":    {{41, "artist41"}},
-				"Composer":  {},
+				"Artists":   {{41, "artist41"}},
+				"Composers": {},
 				"DJ":        {},
 				"With":      {},
 				"Conductor": {},
@@ -3082,9 +3082,9 @@ func TestTrackerGetArtistByName(t *testing.T) {
 		Artists: gazelle.Artists{
 			Tracker: tracker,
 			Roles: gazelle.Roles{
-				"Artist":    {{1, "name"}},
+				"Artists":   {{1, "name"}},
 				"With":      {{2, "name2"}, {3, "name3"}},
-				"Composer":  {},
+				"Composers": {},
 				"DJ":        {},
 				"Conductor": {},
 				"RemixedBy": {},
@@ -3107,8 +3107,8 @@ func TestTrackerGetArtistByName(t *testing.T) {
 		Artists: gazelle.Artists{
 			Tracker: tracker,
 			Roles: gazelle.Roles{
-				"Artist":    {{41, "artist41"}},
-				"Composer":  {},
+				"Artists":   {{41, "artist41"}},
+				"Composers": {},
 				"DJ":        {},
 				"With":      {},
 				"Conductor": {},
@@ -3317,7 +3317,7 @@ func TestTrackerSearch(t *testing.T) {
 		Artists: gazelle.Artists{
 			Tracker: tracker,
 			Roles: gazelle.Roles{
-				"Artist": {{111, "artist111"}},
+				"Artists": {{111, "artist111"}},
 			},
 		},
 		ID:   1,
@@ -3429,7 +3429,7 @@ func TestNewTopTenTorrents(t *testing.T) {
 				Artists: gazelle.Artists{
 					Tracker: tracker,
 					Roles: gazelle.Roles{
-						"Artist": {{0, "artist"}},
+						"Artists": {{0, "artist"}},
 					},
 				},
 				ID:           2,
@@ -3488,7 +3488,7 @@ func TestTrackerTop10(t *testing.T) {
 				Artists: gazelle.Artists{
 					Tracker: tracker,
 					Roles: gazelle.Roles{
-						"Artist": {{0, "artist1"}},
+						"Artists": {{0, "artist1"}},
 					},
 				},
 				ID:           2,
@@ -3520,7 +3520,7 @@ func TestTrackerTop10(t *testing.T) {
 				Artists: gazelle.Artists{
 					Tracker: tracker,
 					Roles: gazelle.Roles{
-						"Artist": {{0, "artist8"}},
+						"Artists": {{0, "artist8"}},
 					},
 				},
 				ID:           9,
@@ -3552,7 +3552,7 @@ func TestTrackerTop10(t *testing.T) {
 				Artists: gazelle.Artists{
 					Tracker: tracker,
 					Roles: gazelle.Roles{
-						"Artist": {{0, "artist20"}},
+						"Artists": {{0, "artist20"}},
 					},
 				},
 				ID:           19,
@@ -3584,7 +3584,7 @@ func TestTrackerTop10(t *testing.T) {
 				Artists: gazelle.Artists{
 					Tracker: tracker,
 					Roles: gazelle.Roles{
-						"Artist": {{0, "artist38"}},
+						"Artists": {{0, "artist38"}},
 					},
 				},
 				ID:           37,
