@@ -256,6 +256,13 @@ func (a ArtistList) Names() []string {
 // Role is the name of an artist's role on a release
 type Role string
 
+// Artists
+// With
+// RemixedBy
+// Composers
+// Conductor
+// DJ
+
 // Roles maps from roles onto lists of artists
 type Roles map[Role]ArtistList
 
@@ -281,16 +288,48 @@ func (a Artists) Names() []string {
 // Similarity returns how similar two list of artists are
 // with 0.0 being not at all similar and 1.0 being completely the same
 func (a ArtistList) Similarity(a2 ArtistList) float64 {
-	// use assignment first?
-	return strsim.ListSimilarity(a.Names(), a2.Names(), Similarity)
+	// treat the lists as sets
+	// similarity is |a ∩ b|*2/(|a|+|b|)
+	// so {1} and {1} yields 1.0
+	// {1} {2} yields 0.0
+	// {1,2} {1} yields 0.666...
+	// {1,2} {2,3} yields 0.5
+	// alternatively can use |a ∩ b|/(|a|+|b|-|a ∩ b|)
+	// or equivalently |a ∩ b|/|a ∪ b|
+	m := map[string]int{}
+	for _, i := range a {
+		m[i.Name]++
+	}
+	for _, i := range a2 {
+		m[i.Name]++
+	}
+	c := 0
+	for _, v := range m {
+		if v > 1 {
+			c++
+		}
+	}
+	return float64(c*2) / float64(len(a)+len(a2))
 }
 
 // Similarity returns how similar two sets of roles are
 // with 0.0 being not at all similar and 1.0 being completely the same
 func (r Roles) Similarity(r2 Roles) float64 {
+	var weights = map[Role]float64{
+		"Artists":   1.0,
+		"With":      0.5,
+		"RemixedBy": 0.2,
+		"Composers": 1.0,
+		"Conductor": 1.0,
+		"DJ":        1.0,
+		"Producer":  0.2,
+	}
 	var ws WeightedScore
 	for c := range r {
-		ws.Update(r[c].Similarity(r2[c]), 1.0)
+		// if one or the other is missing this role, skip it
+		if len(r[c]) > 0 && len(r2[c]) > 0 {
+			ws.Update(r[c].Similarity(r2[c]), weights[c])
+		}
 	}
 	return ws.Score()
 }
@@ -442,6 +481,24 @@ var roleNames = map[string]Role{
 	"DJ":        "DJ",
 	"7":         "Producer",
 	"Producer":  "Producer",
+}
+
+var importance = map[Role]int{
+	"Artists":   1,
+	"With":      2,
+	"RemixedBy": 3,
+	"Composers": 4,
+	"Conductor": 5,
+	"DJ":        6,
+	"Producer":  7,
+}
+
+// Importance maps a role name onto its integer encoding
+func (r Role) Importance() int {
+	if i, ok := importance[r]; ok {
+		return i
+	}
+	return -1
 }
 
 // NewExtendedArtistMap creates Artists from a tracker and a whatapi.ExtendedArtistMap
