@@ -589,7 +589,7 @@ func (t *Torrent) Fill(tx *sqlx.Tx) error {
 		return nil // already filled
 	}
 	start := time.Now()
-	fmt.Printf("#     filling %s\n", t.ShortName())
+	fmt.Printf("#+ filling %s", t.ShortName())
 	var err error
 	var tg = make([]Torrent, 1)
 	if t.Group.ID == 0 {
@@ -598,6 +598,7 @@ func (t *Torrent) Fill(tx *sqlx.Tx) error {
 		tg, err = t.GetGroup(t.Group.ID)
 	}
 	if err != nil {
+		fmt.Printf(" [%s]\n", err)
 		return err
 	}
 	for _, ti := range tg {
@@ -606,7 +607,7 @@ func (t *Torrent) Fill(tx *sqlx.Tx) error {
 		}
 		ti.Update(tx)
 	}
-	fmt.Printf("#     fill took %s\n", time.Since(start))
+	fmt.Printf(" (%s)\n", time.Since(start))
 	return nil
 }
 
