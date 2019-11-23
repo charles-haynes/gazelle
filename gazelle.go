@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -80,18 +81,42 @@ func Similarity(a, b string) float64 {
 	return strsim.WrapNoCase(strsim.LCS)(a, b)
 }
 
-func scoreSize(t1, t2 Torrent) float64 {
-	if len(t1.Files) == len(t2.Files) && t1.Size == t2.Size {
-		return 1.0
-	}
-	return 0.0
+// SizeSimilarity measures how similar two file sizes are
+// with 0.0 being not similar at all, and 1.0 being identical
+// Arbitrarily, if one file is 1/2 the size of the other, it's 0.1 similar
+func SizeSimilarity(s1, s2 int64) float64 {
+	d := math.Abs(float64(s1 - s2))
+	d = 1.0 - d/float64(s1+s2)
+	return (math.Pow(81.0, d) - 1.0) / 80.0
+	/*
+	   f(1.0) = 0.0
+	   f(0.5) = 0.1
+	   f(0.0) = 1.0
+	   f(x) = (k^(1-x)-1)/(k-1)
+	   k = 81
+	*/
+}
+
+// FileSimilarity measures how similar two files are, considring their
+// names and lengths, with 0.0 being not similar at all, and 1.0 being identical
+func FileSimilarity(f1, f2 whatapi.FileStruct) float64 {
+	ws := WeightedScore{}
+	ws.Update(Similarity(f1.Name(), f2.Name()), 1.0)
+	ws.Update(SizeSimilarity(f1.Size, f2.Size), 1.0)
+	return ws.Score()
 }
 
 // FileSimilarity measures how similar the files are between two torrents
 // with 0.0 being not at all similar, and 1.0 being identical
-func (t Torrent) FileSimilarity(t2 Torrent) (float64, error) {
-	if scoreSize(t, t2) == 1.0 {
-		return 1.0, nil
+func (t Torrent) FileSimilarity(t2 Torrent) float64 {
+	ws := WeightedScore{}
+	if len(t.Files) == 0 || len(t2.Files) == 0 {
+		ws.Update(SizeSimilarity(t.Size, t2.Size), 1.0)
+		// what's the best way to measure file count similarity?
+		ws.Update(
+			SizeSimilarity(int64(t.FileCount), int64(t2.FileCount)),
+			1.0)
+		return ws.Score()
 	}
 	if len(t.Files) < len(t2.Files) {
 		t, t2 = t2, t
@@ -100,28 +125,22 @@ func (t Torrent) FileSimilarity(t2 Torrent) (float64, error) {
 	for i, f1 := range t.Files {
 		costs[i] = make([]float64, len(t2.Files))
 		for j, f2 := range t2.Files {
-			costs[i][j] = Similarity(f1.Name(), f2.Name())
+			costs[i][j] = FileSimilarity(f1, f2)
 		}
 	}
 	m, err := munkres.NewHungarianAlgorithm(costs)
 	if err != nil {
-		return 0.0, err
+		return 0.0
 	}
 	a := m.Execute()
-	sumOfSquares := 0.0
-	sum := 0.0
 	for i, f1 := range t.Files {
-		if a[i] < 0 {
-			sumOfSquares += 1.0
-			sum += float64(f1.Size)
-		} else {
-			n := float64(f1.Size - t2.Files[a[i]].Size)
-			d := float64(f1.Size + t2.Files[a[i]].Size)
-			sumOfSquares += (n / d) * (n / d)
-			sum += d
+		f2 := whatapi.FileStruct{"", 0}
+		if a[i] >= 0 {
+			f2 = t2.Files[a[i]]
 		}
+		ws.Update(FileSimilarity(f1, f2), 1.0)
 	}
-	return 1.0 - math.Sqrt(sumOfSquares/(sum*sum)), nil
+	return ws.Score()
 }
 
 func threeWayYear(y1, y2 int) float64 {
@@ -211,6 +230,16 @@ func (t Torrent) ReleaseSimilarity(t2 Torrent) float64 {
 	score.Update(threeWayYear(tYear, rYear), 0.02)
 
 	return score.Score()
+}
+
+// Similarity measures the similarity between two torrents
+// where 0.0 is not at all similar, and 1.0 is identical
+func (t Torrent) Similarity(t2 Torrent) float64 {
+	var ws WeightedScore
+	ws.Update(t.Group.Similarity(t2.Group), 1.0)
+	ws.Update(t.ReleaseSimilarity(t2), 0.2)
+	ws.Update(t.FileSimilarity(t2), 0.5)
+	return ws.Score()
 }
 
 // Artist is a single gazelle artist
@@ -705,7 +734,6 @@ func (t Torrent) byArtist(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent,
 // Similarity measures how similar two groups are
 // with 0.0 for not at all similar, and 1.0 as the same
 func (g Group) Similarity(g2 Group) float64 {
-	// find the best candidate group(s)
 	var sc WeightedScore
 	sc.Update(Similarity(g.Name, g2.Name), 1.0)
 	sc.Update(threeWayYear(g.Year, g2.Year), 0.25)
@@ -768,10 +796,23 @@ func (t Torrent) isSeeding() bool {
 	return false
 }
 
+// Candidate is a possible match for a torrent on another tracker
+// P is the probability that it's a match
+type Candidate struct {
+	Torrent
+	P float64
+}
+
+// Candidates is a list of candidate matches
+type Candidates []Candidate
+
+func (c Candidates) Len() int           { return len(c) }
+func (c Candidates) Less(i, j int) bool { return c[i].P > c[j].P }
+func (c Candidates) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+
 // Find tries to find the equivalent of this torrent on another tracker
 // it returns a candidate, a probability, and if there was an error
-func (t Torrent) Find(db *sqlx.DB, disc discogs.DB, dst Tracker) (
-	tt Torrent, p float64, err error) {
+func (t Torrent) Find(db *sqlx.DB, disc discogs.DB, dst Tracker) (Candidates, error) {
 	fmt.Printf("### searching %s for %s\n", dst.Name, t.String())
 	fmt.Printf("##   https://%s/torrents.php?torrentid=%d\n",
 		t.Host, t.ID)
@@ -782,32 +823,25 @@ func (t Torrent) Find(db *sqlx.DB, disc discogs.DB, dst Tracker) (
 	// search by artist
 	// look by label and catalogue number
 	// look by torrent file
-	var (
-		at      Torrent
-		ap      float64
-		tr, atr []Torrent
-	)
-	if err == nil {
-		tr, err = t.byGroup(db, disc, dst)
-	}
-	if err == nil {
-		tt, p = t.bestRelease(tr)
-	}
-	if err == nil {
-		atr, err = t.byArtist(db, disc, dst)
-	}
-	if err == nil {
-		at, ap = t.bestRelease(atr)
-		if ap > p {
-			p = ap
-			tt = at
-		}
-	}
+	c := Candidates{}
+	tr, err := t.byGroup(db, disc, dst)
 	if err != nil {
 		err = fmt.Errorf("Find: %w", err)
-		return Torrent{}, 0.0, err
+		return nil, err
 	}
-	return tt, p, nil
+	for _, ti := range tr {
+		c = append(c, Candidate{ti, t.Similarity(ti)})
+	}
+	tr, err = t.byArtist(db, disc, dst)
+	if err != nil {
+		err = fmt.Errorf("Find: %w", err)
+		return nil, err
+	}
+	for _, ti := range tr {
+		c = append(c, Candidate{ti, t.Similarity(ti)})
+	}
+	sort.Sort(c)
+	return c, nil
 }
 
 // UpdateArtistsGroups updates the artists_groups table in the db for
@@ -1063,7 +1097,7 @@ func (t *Torrent) Remaster() string {
 }
 
 func (t *Torrent) String() string {
-	return fmt.Sprintf("%s: %s - %s (%04d) [%s %s %s]%s [%s]",
+	return fmt.Sprintf("%11s: %s - %s (%04d) [%s %s %s]%s [%s]",
 		t.ShortName(),
 		t.Artists.DisplayName(), t.Group.Name, t.Year,
 		t.Media, t.Format, t.Encoding,

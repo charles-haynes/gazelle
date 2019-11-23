@@ -1468,7 +1468,7 @@ func TestTorrentStringNotRemastered(t *testing.T) {
 		RemasterCatalogueNumber: addrOf("remastercataloguenumber"),
 	}
 	r := to.String()
-	expected := "tracker-1: artist - group (1234) [media format encoding] [releasetype1]"
+	expected := "  tracker-1: artist - group (1234) [media format encoding] [releasetype1]"
 	if r != expected {
 		t.Errorf("expected %v got %v", expected, r)
 	}
@@ -1504,7 +1504,7 @@ func TestTorrentStringRemastered(t *testing.T) {
 		RemasterCatalogueNumber: addrOf("remastercataloguenumber"),
 	}
 	r := to.String()
-	expected := "tracker-1: artist - group (1234) [media format encoding]{(4321) remasterlabel/remastercataloguenumber/remastertitle} [releasetype1]"
+	expected := "  tracker-1: artist - group (1234) [media format encoding]{(4321) remasterlabel/remastercataloguenumber/remastertitle} [releasetype1]"
 	if r != expected {
 		t.Errorf("expected %v got %v", expected, r)
 	}
