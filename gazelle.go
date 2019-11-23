@@ -169,38 +169,43 @@ func (t Torrent) ReleaseSimilarity(t2 Torrent) float64 {
 		return 0.0
 	}
 	tYear := t.Year
-	tRecLab := NullableString(t.RecordLabel)
-	tCatNum := NullableString(t.CatalogueNumber)
+	tRecLab := t.RecordLabel
+	tCatNum := t.CatalogueNumber
 	tRemTit := ""
 	if t.Remastered {
 		tYear = t.RemasterYear
 		tRecLab = t.RemasterRecordLabel
-		tCatNum = NullableString(t.RemasterCatalogueNumber)
+		tCatNum = t.RemasterCatalogueNumber
 		tRemTit = t.RemasterTitle
 	}
 	rYear := t2.Year
-	rRecLab := NullableString(t2.RecordLabel)
-	rCatNum := NullableString(t2.CatalogueNumber)
+	rRecLab := t2.RecordLabel
+	rCatNum := t2.CatalogueNumber
 	rRemTit := ""
 	if t2.Remastered {
 		rYear = t2.RemasterYear
 		rRecLab = t2.RemasterRecordLabel
-		rCatNum = NullableString(t2.RemasterCatalogueNumber)
+		rCatNum = t2.RemasterCatalogueNumber
 		rRemTit = t2.RemasterTitle
 	}
 
-	if rCatNum == "" {
+	if rRecLab != nil && rCatNum != nil && *rCatNum == "" {
 		// some people have put both record label and catalogue number
 		// into the record label separated by " / "
-		ss := strings.SplitN(rRecLab, " / ", 2)
+		ss := strings.SplitN(*rRecLab, " / ", 2)
 		if len(ss) == 2 {
-			rRecLab = ss[0]
-			rCatNum = ss[1]
+			rRecLab = &ss[0]
+			rCatNum = &ss[1]
 		}
 	}
 
-	score.Update(threeWaySim(tCatNum, rCatNum), 0.50)
-	score.Update(threeWaySim(tRecLab, rRecLab), 0.20)
+	// artists torrents don't have cat nums, so skip if missing
+	if tCatNum != nil && rCatNum != nil {
+		score.Update(threeWaySim(*tCatNum, *rCatNum), 0.50)
+	}
+	if tRecLab != nil && rRecLab != nil {
+		score.Update(threeWaySim(*tRecLab, *rRecLab), 0.20)
+	}
 	score.Update(threeWaySim(tRemTit, rRemTit), 0.10)
 	score.Update(threeWaySim(t.ReleaseType(), t2.ReleaseType()), 0.05)
 	score.Update(threeWayYear(tYear, rYear), 0.02)
@@ -552,7 +557,7 @@ type Torrent struct {
 
 	RemasterYear            int       `db:"remasteryear"`
 	RemasterTitle           string    `db:"remastertitle"`
-	RemasterRecordLabel     string    `db:"remasterlabel"`
+	RemasterRecordLabel     *string   `db:"remasterlabel"`
 	RemasterCatalogueNumber *string   `db:"cataloguenumber"`
 	Scene                   bool      `db:"scene"`
 	HasLog                  bool      `db:"haslog"`
@@ -1044,10 +1049,16 @@ func (t *Torrent) Remaster() string {
 	if !t.Remastered {
 		return ""
 	}
+	r := "<nil>"
+	if t.RemasterRecordLabel != nil {
+		r = *t.RemasterRecordLabel
+	}
+	c := "<nil>"
+	if t.RemasterCatalogueNumber != nil {
+		c = *t.RemasterCatalogueNumber
+	}
 	return fmt.Sprintf("{(%4d) %s/%s/%s}",
-		t.RemasterYear, t.RemasterRecordLabel,
-		NullableString(t.RemasterCatalogueNumber),
-		t.RemasterTitle)
+		t.RemasterYear, r, c, t.RemasterTitle)
 }
 
 func (t *Torrent) String() string {
@@ -1139,7 +1150,7 @@ func NewSearchTorrentStruct(g Group, rt whatapi.SearchTorrentStruct) (Torrent, e
 		Remastered:    rt.Remastered(),
 		RemasterYear:  rt.RemasterYear(),
 		RemasterTitle: rt.RemasterTitle(),
-		// RemasterRecordLabel:     "",
+		// RemasterRecordLabel:     nil,
 		RemasterCatalogueNumber: &remasterCatalogueNumber,
 		Scene:                   rt.Scene(),
 		HasLog:                  rt.HasLog(),
@@ -1219,6 +1230,7 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 				return nil,
 					fmt.Errorf("can't parse time %s", rt.Time)
 			}
+			remasterRecordLabel := rt.RemasterRecordLabel()
 			torrents = append(torrents, Torrent{
 				Group: g,
 				ID:    rt.ID(),
@@ -1229,7 +1241,7 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 				Remastered:          rt.Remastered(),
 				RemasterYear:        rt.RemasterYear(),
 				RemasterTitle:       rt.RemasterTitle(),
-				RemasterRecordLabel: rt.RemasterRecordLabel(),
+				RemasterRecordLabel: &remasterRecordLabel,
 				// RemasterCatalogueNumber: nil,
 				Scene:       rt.Scene(),
 				HasLog:      rt.HasLog(),
@@ -1291,6 +1303,7 @@ func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
 		f := t.FilePath()
 		filePath = &f
 	}
+	remasterRecordLabel := t.RemasterRecordLabel()
 	remasterCatalogueNumber := t.RemasterCatalogueNumber()
 	return Torrent{
 		Group:                   g,
@@ -1302,7 +1315,7 @@ func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
 		Remastered:              t.Remastered(),
 		RemasterYear:            t.RemasterYear(),
 		RemasterTitle:           t.RemasterTitle(),
-		RemasterRecordLabel:     t.RemasterRecordLabel(),
+		RemasterRecordLabel:     &remasterRecordLabel,
 		RemasterCatalogueNumber: &remasterCatalogueNumber,
 		Scene:                   t.Scene(),
 		HasLog:                  t.HasLog(),
