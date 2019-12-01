@@ -823,14 +823,16 @@ func (t Torrent) Find(db *sqlx.DB, disc discogs.DB, dst Tracker) (Candidates, er
 	// search by artist
 	// look by label and catalogue number
 	// look by torrent file
-	c := Candidates{}
+	cm := map[int]Candidate{}
 	tr, err := t.byGroup(db, disc, dst)
 	if err != nil {
 		err = fmt.Errorf("Find: %w", err)
 		return nil, err
 	}
 	for _, ti := range tr {
-		c = append(c, Candidate{ti, t.Similarity(ti)})
+		if _, ok := cm[ti.ID]; !ok {
+			cm[ti.ID] = Candidate{ti, t.Similarity(ti)}
+		}
 	}
 	tr, err = t.byArtist(db, disc, dst)
 	if err != nil {
@@ -838,7 +840,15 @@ func (t Torrent) Find(db *sqlx.DB, disc discogs.DB, dst Tracker) (Candidates, er
 		return nil, err
 	}
 	for _, ti := range tr {
-		c = append(c, Candidate{ti, t.Similarity(ti)})
+		if _, ok := cm[ti.ID]; !ok {
+			cm[ti.ID] = Candidate{ti, t.Similarity(ti)}
+		}
+	}
+	c := make(Candidates, len(cm))
+	i := 0
+	for _, ci := range cm {
+		c[i] = ci
+		i++
 	}
 	sort.Sort(c)
 	return c, nil
