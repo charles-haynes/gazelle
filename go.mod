@@ -7,7 +7,7 @@ replace github.com/charles-haynes/discogs => ../discogs
 replace github.com/charles-haynes/whatapi => ../whatapi
 
 require (
-	github.com/charles-haynes/discogs v0.0.0
+	github.com/charles-haynes/discogs v0.1.1
 	github.com/charles-haynes/munkres v0.0.0-20191008174651-55d467190535
 	github.com/charles-haynes/strsim v0.0.0-20191011181331-ef9ead4980ee
 	github.com/charles-haynes/whatapi v0.0.14
