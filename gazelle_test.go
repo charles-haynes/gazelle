@@ -183,22 +183,22 @@ PRAGMA foreign_keys=ON;
 	return db
 }
 
-type MockWhatAPI struct {
+type MockClient struct {
 	JSON  string
 	Calls *[]string
 }
 
-func (m *MockWhatAPI) Called() {
+func (m *MockClient) Called() {
 	rpc := make([]uintptr, 1)
 	runtime.Callers(2, rpc)
 	frame, _ := runtime.CallersFrames(rpc).Next()
 	n := strings.TrimPrefix(
 		frame.Function,
-		"github.com/charles-haynes/gazelle_test.MockWhatAPI.")
+		"github.com/charles-haynes/gazelle_test.MockClient.")
 	*m.Calls = append(*m.Calls, n)
 }
 
-func (m MockWhatAPI) Contains(name string) bool {
+func (m MockClient) Contains(name string) bool {
 	for _, v := range *m.Calls {
 		if v == name {
 			return true
@@ -207,13 +207,13 @@ func (m MockWhatAPI) Contains(name string) bool {
 	return false
 }
 
-func (m MockWhatAPI) Print() {
+func (m MockClient) Print() {
 	for _, v := range *m.Calls {
 		fmt.Printf("%s\n", v)
 	}
 }
 
-func (m *MockWhatAPI) Reset() {
+func (m *MockClient) Reset() {
 	*m.Calls = (*m.Calls)[:0]
 }
 
@@ -234,71 +234,75 @@ func checkResponseStatus(status, errorStr string) error {
 	return nil
 }
 
-func (m MockWhatAPI) GetJSON(requestURL string, responseObj interface{}) error {
+func (m MockClient) GetJSON(requestURL string, responseObj interface{}) error {
 	m.Called()
 	return json.Unmarshal([]byte(m.JSON), responseObj)
 }
-func (m MockWhatAPI) Do(action string, params url.Values, result interface{}) error {
+func (m MockClient) Do(action string, params url.Values, result interface{}) error {
 	m.Called()
 	return nil
 }
-func (m MockWhatAPI) CreateDownloadURL(id int) (s string, e error) {
+func (m MockClient) CreateDownloadURL(id int) (s string, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) Login(username, password string) error {
+func (m MockClient) CreateUploadURL() (u url.URL, v url.Values, e error) {
+	m.Called()
+	return
+}
+func (m MockClient) Login(username, password string) error {
 	m.Called()
 	return nil
 }
-func (m MockWhatAPI) Logout() error {
+func (m MockClient) Logout() error {
 	m.Called()
 	return nil
 }
-func (m MockWhatAPI) GetAccount() error {
+func (m MockClient) GetAccount() error {
 	m.Called()
 	return nil
 }
-func (m MockWhatAPI) GetMailbox(params url.Values) (M whatapi.Mailbox, e error) {
+func (m MockClient) GetMailbox(params url.Values) (M whatapi.Mailbox, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetConversation(id int) (C whatapi.Conversation, e error) {
+func (m MockClient) GetConversation(id int) (C whatapi.Conversation, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetNotifications(params url.Values) (N whatapi.Notifications, e error) {
+func (m MockClient) GetNotifications(params url.Values) (N whatapi.Notifications, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetAnnouncements() (A whatapi.Announcements, e error) {
+func (m MockClient) GetAnnouncements() (A whatapi.Announcements, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetSubscriptions(params url.Values) (S whatapi.Subscriptions, e error) {
+func (m MockClient) GetSubscriptions(params url.Values) (S whatapi.Subscriptions, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetCategories() (C whatapi.Categories, e error) {
+func (m MockClient) GetCategories() (C whatapi.Categories, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetForum(id int, params url.Values) (F whatapi.Forum, e error) {
+func (m MockClient) GetForum(id int, params url.Values) (F whatapi.Forum, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetThread(id int, params url.Values) (T whatapi.Thread, e error) {
+func (m MockClient) GetThread(id int, params url.Values) (T whatapi.Thread, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetArtistBookmarks() (A whatapi.ArtistBookmarks, e error) {
+func (m MockClient) GetArtistBookmarks() (A whatapi.ArtistBookmarks, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetTorrentBookmarks() (T whatapi.TorrentBookmarks, e error) {
+func (m MockClient) GetTorrentBookmarks() (T whatapi.TorrentBookmarks, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetArtist(id int, params url.Values) (A whatapi.Artist, e error) {
+func (m MockClient) GetArtist(id int, params url.Values) (A whatapi.Artist, e error) {
 	m.Called()
 	r := whatapi.ArtistResponse{}
 	e = m.GetJSON(m.JSON, &r)
@@ -308,11 +312,11 @@ func (m MockWhatAPI) GetArtist(id int, params url.Values) (A whatapi.Artist, e e
 	return r.Response, checkResponseStatus(r.Status, r.Error)
 	return
 }
-func (m MockWhatAPI) GetRequest(id int, params url.Values) (R whatapi.Request, e error) {
+func (m MockClient) GetRequest(id int, params url.Values) (R whatapi.Request, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetTorrent(id int, params url.Values) (G whatapi.GetTorrentStruct, e error) {
+func (m MockClient) GetTorrent(id int, params url.Values) (G whatapi.GetTorrentStruct, e error) {
 	m.Called()
 	r := whatapi.TorrentResponse{}
 	e = m.GetJSON(m.JSON, &r)
@@ -321,7 +325,7 @@ func (m MockWhatAPI) GetTorrent(id int, params url.Values) (G whatapi.GetTorrent
 	}
 	return r.Response, checkResponseStatus(r.Status, r.Error)
 }
-func (m MockWhatAPI) GetTorrentGroup(id int, params url.Values) (T whatapi.TorrentGroup, e error) {
+func (m MockClient) GetTorrentGroup(id int, params url.Values) (T whatapi.TorrentGroup, e error) {
 	m.Called()
 	r := whatapi.TorrentGroupResponse{}
 	e = m.GetJSON(m.JSON, &r)
@@ -331,7 +335,7 @@ func (m MockWhatAPI) GetTorrentGroup(id int, params url.Values) (T whatapi.Torre
 	return r.Response, checkResponseStatus(r.Status, r.Error)
 	return
 }
-func (m MockWhatAPI) SearchTorrents(searchStr string, params url.Values) (T whatapi.TorrentSearch, e error) {
+func (m MockClient) SearchTorrents(searchStr string, params url.Values) (T whatapi.TorrentSearch, e error) {
 	m.Called()
 	r := whatapi.TorrentSearchResponse{}
 	e = m.GetJSON(m.JSON, &r)
@@ -341,15 +345,15 @@ func (m MockWhatAPI) SearchTorrents(searchStr string, params url.Values) (T what
 	return r.Response, checkResponseStatus(r.Status, r.Error)
 	return
 }
-func (m MockWhatAPI) SearchRequests(searchStr string, params url.Values) (R whatapi.RequestsSearch, e error) {
+func (m MockClient) SearchRequests(searchStr string, params url.Values) (R whatapi.RequestsSearch, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) SearchUsers(searchStr string, params url.Values) (U whatapi.UserSearch, e error) {
+func (m MockClient) SearchUsers(searchStr string, params url.Values) (U whatapi.UserSearch, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetTopTenTorrents(params url.Values) (T whatapi.TopTenTorrents, e error) {
+func (m MockClient) GetTopTenTorrents(params url.Values) (T whatapi.TopTenTorrents, e error) {
 	m.Called()
 	r := whatapi.TopTenTorrentsResponse{}
 	e = m.GetJSON(m.JSON, &r)
@@ -358,19 +362,15 @@ func (m MockWhatAPI) GetTopTenTorrents(params url.Values) (T whatapi.TopTenTorre
 	}
 	return r.Response, checkResponseStatus(r.Status, r.Error)
 }
-func (m MockWhatAPI) GetTopTenTags(params url.Values) (T whatapi.TopTenTags, e error) {
+func (m MockClient) GetTopTenTags(params url.Values) (T whatapi.TopTenTags, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetTopTenUsers(params url.Values) (T whatapi.TopTenUsers, e error) {
+func (m MockClient) GetTopTenUsers(params url.Values) (T whatapi.TopTenUsers, e error) {
 	m.Called()
 	return
 }
-func (m MockWhatAPI) GetSimilarArtists(id, limit int) (S whatapi.SimilarArtists, e error) {
-	m.Called()
-	return
-}
-func (m MockWhatAPI) ParseHTML(s string) (st string, e error) {
+func (m MockClient) GetSimilarArtists(id, limit int) (S whatapi.SimilarArtists, e error) {
 	m.Called()
 	return
 }
@@ -585,7 +585,7 @@ func TestTorrentFillBadTorrentID(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
@@ -593,8 +593,8 @@ func TestTorrentFillBadTorrentID(t *testing.T) {
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
-					WhatAPI: m,
-					Name:    "tracker",
+					Client: m,
+					Name:   "tracker",
 				},
 			},
 		},
@@ -618,7 +618,7 @@ func TestTorrentFillAlreadyFilled(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
@@ -626,8 +626,8 @@ func TestTorrentFillAlreadyFilled(t *testing.T) {
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
-					WhatAPI: m,
-					Name:    "tracker",
+					Client: m,
+					Name:   "tracker",
 				},
 			},
 		},
@@ -653,7 +653,7 @@ func TestTorrentFillNeedsFillingNilFiles(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  group2JSON,
 		Calls: &[]string{},
 	}
@@ -661,8 +661,8 @@ func TestTorrentFillNeedsFillingNilFiles(t *testing.T) {
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
-					WhatAPI: m,
-					Name:    "tracker",
+					Client: m,
+					Name:   "tracker",
 				},
 			},
 			ID: 2,
@@ -694,7 +694,7 @@ func TestTorrentFillNeedsFillingEmptyFilePath(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  group2JSON,
 		Calls: &[]string{},
 	}
@@ -702,8 +702,8 @@ func TestTorrentFillNeedsFillingEmptyFilePath(t *testing.T) {
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
-					WhatAPI: m,
-					Name:    "tracker",
+					Client: m,
+					Name:   "tracker",
 				},
 			},
 			ID: 2,
@@ -1291,7 +1291,7 @@ func TestTorrentUpdate(t *testing.T) {
 
 func TestTorrentGetFilesAlreadyFilled(t *testing.T) {
 	db := NewTestDB()
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
@@ -1307,8 +1307,8 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 2);
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
-					WhatAPI: m,
-					Name:    "tracker",
+					Client: m,
+					Name:   "tracker",
 				},
 			},
 		},
@@ -1328,7 +1328,7 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 2);
 
 func TestTorrentGetFilesFromDB(t *testing.T) {
 	db := NewTestDB()
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
@@ -1344,8 +1344,8 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
-					WhatAPI: m,
-					Name:    "tracker",
+					Client: m,
+					Name:   "tracker",
 				},
 			},
 		},
@@ -1365,7 +1365,7 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 
 func TestTorrentGetFilesNoFilePath(t *testing.T) {
 	db := NewTestDB()
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  torrent1JSON,
 		Calls: &[]string{},
 	}
@@ -1381,8 +1381,8 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
-					WhatAPI: m,
-					Name:    "tracker",
+					Client: m,
+					Name:   "tracker",
 				},
 			},
 		},
@@ -1401,7 +1401,7 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 
 func TestTorrentGetFilesFromAPI(t *testing.T) {
 	db := NewTestDB()
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  group2JSON,
 		Calls: &[]string{},
 	}
@@ -1417,8 +1417,8 @@ INSERT INTO files VALUES("tracker", 1, "dbfilename", 3);
 		Group: gazelle.Group{
 			Artists: gazelle.Artists{
 				Tracker: gazelle.Tracker{
-					WhatAPI: m,
-					Name:    "tracker",
+					Client: m,
+					Name:   "tracker",
 				},
 			},
 			ID: 2,
@@ -2181,229 +2181,6 @@ func TestNewArtist(t *testing.T) {
 	}
 }
 
-func TestTorrentUpdateCrossInsertSrcNoDst(t *testing.T) {
-	db := NewTestDB()
-	tx, err := db.Beginx()
-	if err != nil {
-		t.Error(err)
-	}
-	_, err = tx.Exec(`
-INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
-INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
-`)
-	if err != nil {
-		t.Error(err)
-	}
-	src := gazelle.Torrent{
-		Group: gazelle.Group{
-			Artists: gazelle.Artists{
-				Tracker: expectTracker,
-			},
-		},
-		ID: 1,
-	}
-	dst := gazelle.Torrent{}
-	err = src.UpdateCross(tx, dst)
-	if err != nil {
-		t.Error(err)
-	}
-	type cross struct {
-		Tracker   string
-		TorrentID int
-		Other     *string
-		OtherID   *int
-		Time      *time.Time
-	}
-	var r []cross
-	err = tx.Select(&r, `SELECT * FROM crosses`)
-	if err != nil {
-		t.Error(err)
-	}
-	expected := []cross{{"tracker", 1, nil, nil, r[0].Time}}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected %v got %v", expected, r)
-	}
-	d := time.Now().Sub(*r[0].Time)
-	if d < 0 || d > time.Minute {
-		t.Errorf("expected time within 1 min of now, got %v", *r[0].Time)
-	}
-}
-
-func TestTorrentUpdateCrossDupSrcNoDst(t *testing.T) {
-	db := NewTestDB()
-	tx, err := db.Beginx()
-	if err != nil {
-		t.Error(err)
-	}
-	_, err = tx.Exec(`
-INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
-INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
-INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
-`)
-	if err != nil {
-		t.Error(err)
-	}
-	src := gazelle.Torrent{
-		Group: gazelle.Group{
-			Artists: gazelle.Artists{
-				Tracker: expectTracker,
-			},
-		},
-		ID: 1,
-	}
-	dst := gazelle.Torrent{}
-	err = src.UpdateCross(tx, dst)
-	if err != nil {
-		t.Error(err)
-	}
-	type cross struct {
-		Tracker   string
-		TorrentID int
-		Other     *string
-		OtherID   *int
-		Time      *time.Time
-	}
-	var r []cross
-	err = tx.Select(&r, `SELECT * FROM crosses`)
-	if err != nil {
-		t.Error(err)
-	}
-	time := gtime
-	expected := []cross{{"tracker", 1, nil, nil, &time}}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected %v got %v", expected, r)
-	}
-}
-
-func TestTorrentUpdateCrossInsertSrcAndDst(t *testing.T) {
-	db := NewTestDB()
-	tx, err := db.Beginx()
-	if err != nil {
-		t.Error(err)
-	}
-	_, err = tx.Exec(`
-INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group2",0,"","","",NULL,NULL,NULL,false,NULL,"");
-INSERT INTO torrents VALUES ("tracker",1,2,"hash1","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
-INSERT INTO groups VALUES("other",NULL,NULL,3,"group3",0,"","","",NULL,NULL,NULL,false,NULL,"");
-INSERT INTO torrents VALUES ("other",4,3,"hash2","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"4321-05-06 07:08:09",NULL,NULL,NULL,NULL);
-`)
-	if err != nil {
-		t.Error(err)
-	}
-	src := gazelle.Torrent{
-		Group: gazelle.Group{
-			Artists: gazelle.Artists{
-				Tracker: expectTracker,
-			},
-		},
-		ID: 1,
-	}
-	dst := gazelle.Torrent{
-		Group: gazelle.Group{
-			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "other"},
-			},
-		},
-		ID: 4,
-	}
-	err = src.UpdateCross(tx, dst)
-	if err != nil {
-		t.Error(err)
-	}
-	type cross struct {
-		Tracker   string
-		TorrentID int
-		Other     *string
-		OtherID   *int
-		Time      *time.Time
-	}
-	var r []cross
-	err = tx.Select(&r, `SELECT * FROM crosses`)
-	if err != nil {
-		t.Error(err)
-	}
-	expected := []cross{
-		{"other", 4, addrOf("tracker"), addrOfInt(1), r[0].Time},
-		{"tracker", 1, addrOf("other"), addrOfInt(4), r[1].Time},
-	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected %v got %v", expected, r)
-	}
-	d := time.Now().Sub(*r[0].Time)
-	if d < 0 || d > time.Minute {
-		t.Errorf("expected time within 1 min of now, got %v", *r[0].Time)
-	}
-	d = time.Now().Sub(*r[1].Time)
-	if d < 0 || d > time.Minute {
-		t.Errorf("expected time within 1 min of now, got %v", *r[1].Time)
-	}
-}
-
-func TestTorrentUpdateCrossReplaceSrcAndDst(t *testing.T) {
-	db := NewTestDB()
-	tx, err := db.Beginx()
-	if err != nil {
-		t.Error(err)
-	}
-	_, err = tx.Exec(`
-INSERT INTO groups VALUES("tracker",NULL,NULL,2,"group",0,"","","",NULL,NULL,NULL,false,NULL,"");
-INSERT INTO torrents VALUES ("tracker",1,2,"","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"1234-05-06 07:08:09",NULL,NULL,NULL,NULL);
-INSERT INTO groups VALUES("other",NULL,NULL,3,"group3",0,"","","",NULL,NULL,NULL,false,NULL,"");
-INSERT INTO torrents VALUES ("other",4,3,"hash2","","","",false,0,"","",NULL,false,false,false,0,0,0,0,0,0,false,NULL,"4321-05-06 07:08:09",NULL,NULL,NULL,NULL);
-INSERT INTO crosses VALUES("tracker",1,NULL,NULL,"1234-05-06T07:08:09Z");
-`)
-	if err != nil {
-		t.Error(err)
-	}
-	src := gazelle.Torrent{
-		Group: gazelle.Group{
-			Artists: gazelle.Artists{
-				Tracker: expectTracker,
-			},
-		},
-		ID: 1,
-	}
-	dst := gazelle.Torrent{
-		Group: gazelle.Group{
-			Artists: gazelle.Artists{
-				Tracker: gazelle.Tracker{Name: "other"},
-			},
-		},
-		ID: 4,
-	}
-	err = src.UpdateCross(tx, dst)
-	if err != nil {
-		t.Error(err)
-	}
-	type cross struct {
-		Tracker   string
-		TorrentID int
-		Other     *string
-		OtherID   *int
-		Time      *time.Time
-	}
-	var r []cross
-	err = tx.Select(&r, `SELECT * FROM crosses`)
-	if err != nil {
-		t.Error(err)
-	}
-	expected := []cross{
-		{"other", 4, addrOf("tracker"), addrOfInt(1), r[0].Time},
-		{"tracker", 1, addrOf("other"), addrOfInt(4), r[1].Time},
-	}
-	if !reflect.DeepEqual(expected, r) {
-		t.Errorf("expected %v got %v", expected, r)
-	}
-	d := time.Now().Sub(*r[0].Time)
-	if d < 0 || d > time.Minute {
-		t.Errorf("expected time within 1 min of now, got %v", *r[0].Time)
-	}
-	d = time.Now().Sub(*r[1].Time)
-	if d < 0 || d > time.Minute {
-		t.Errorf("expected time within 1 min of now, got %v", *r[1].Time)
-	}
-}
-
 func addrOf(s string) *string    { return &s }
 func addrOfBool(b bool) *bool    { return &b }
 func addrOfInt(i int) *int       { return &i }
@@ -2584,11 +2361,11 @@ func TestNewGetTorrentStruct(t *testing.T) {
 }
 
 func TestTrackerGetTorrentBadID(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
-	tracker := gazelle.Tracker{WhatAPI: m, Name: "tracker"}
+	tracker := gazelle.Tracker{Client: m, Name: "tracker"}
 	_, err := tracker.GetTorrent(1)
 	if err == nil {
 		t.Errorf("expected error bad id parameter, but got nil")
@@ -2692,11 +2469,11 @@ var (
 )
 
 func TestTrackerGetTorrentByID(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  torrent1JSON,
 		Calls: &[]string{},
 	}
-	tracker := gazelle.Tracker{WhatAPI: m, Name: "tracker"}
+	tracker := gazelle.Tracker{Client: m, Name: "tracker"}
 	r, err := tracker.GetTorrent(1)
 	if err != nil {
 		t.Error(err)
@@ -2712,11 +2489,11 @@ func TestTrackerGetTorrentByID(t *testing.T) {
 }
 
 func TestTrackerGetTorrentByHashBadHash(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
-	tracker := gazelle.Tracker{WhatAPI: m, Name: "tracker"}
+	tracker := gazelle.Tracker{Client: m, Name: "tracker"}
 	_, err := tracker.GetTorrentByHash("hash")
 	if err == nil {
 		t.Errorf("expected error bad id parameter, but got nil")
@@ -2730,11 +2507,11 @@ func TestTrackerGetTorrentByHashBadHash(t *testing.T) {
 }
 
 func TestTrackerGetTorrentByHash(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  torrent1JSON,
 		Calls: &[]string{},
 	}
-	tracker := gazelle.Tracker{WhatAPI: m, Name: "tracker"}
+	tracker := gazelle.Tracker{Client: m, Name: "tracker"}
 	r, err := tracker.GetTorrentByHash("hash")
 	if err != nil {
 		t.Error(err)
@@ -2778,13 +2555,13 @@ func TestNewTorrentGroup(t *testing.T) {
 }
 
 func TestTrackerGetGroupBadID(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"failure","error":"bad id parameter"}`,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	_, err := tracker.GetGroup(2)
 	if err == nil {
@@ -2799,13 +2576,13 @@ func TestTrackerGetGroupBadID(t *testing.T) {
 }
 
 func TestTrackerGetGroup(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  group2JSON,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	r, err := tracker.GetGroup(2)
 	if err != nil {
@@ -2830,13 +2607,13 @@ func TestTrackerGetGroup(t *testing.T) {
 }
 
 func TestTrackerGetGroupByHashBadHash(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"failure","error":"bad hash parameter"}`,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	_, err := tracker.GetGroupByHash("hash")
 	if err == nil {
@@ -2851,13 +2628,13 @@ func TestTrackerGetGroupByHashBadHash(t *testing.T) {
 }
 
 func TestTrackerGetGroupByHash(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  group2JSON,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	r, err := tracker.GetGroupByHash("hash")
 	if err != nil {
@@ -2882,13 +2659,13 @@ func TestTrackerGetGroupByHash(t *testing.T) {
 }
 
 func TestTrackerGetArtist(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  artist1JSON,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	r, err := tracker.GetArtist(1)
 	if err != nil {
@@ -3068,13 +2845,13 @@ func TestTrackerGetArtist(t *testing.T) {
 }
 
 func TestTrackerGetArtistByName(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  artist1JSON,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	r, err := tracker.GetArtistByName("artist")
 	if err != nil {
@@ -3254,13 +3031,13 @@ func TestTrackerGetArtistByName(t *testing.T) {
 }
 
 func TestTrackerSearchBadParams(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"failure","error":"bad search parameter"}`,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	params := url.Values{}
 	_, err := tracker.Search(params)
@@ -3276,13 +3053,13 @@ func TestTrackerSearchBadParams(t *testing.T) {
 }
 
 func TestTrackerSearchEmpty(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  `{"status":"success","response":{}}`,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	params := url.Values{}
 	r, err := tracker.Search(params)
@@ -3302,13 +3079,13 @@ func TestTrackerSearchEmpty(t *testing.T) {
 }
 
 func TestTrackerSearch(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  searchJSON,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	params := url.Values{}
 	r, err := tracker.Search(params)
@@ -3471,13 +3248,13 @@ func TestNewTopTenTorrents(t *testing.T) {
 }
 
 func TestTrackerTop10(t *testing.T) {
-	m := MockWhatAPI{
+	m := MockClient{
 		JSON:  top10JSON,
 		Calls: &[]string{},
 	}
 	tracker := gazelle.Tracker{
-		WhatAPI: m,
-		Name:    "tracker",
+		Client: m,
+		Name:   "tracker",
 	}
 	params := url.Values{}
 	r, err := tracker.Top10(params)

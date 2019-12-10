@@ -38,9 +38,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Tracker represents a gazelle tracker and implements the WhatAPI interface
+// Tracker represents a gazelle tracker and implements the Client interface
 type Tracker struct {
-	whatapi.WhatAPI
+	whatapi.Client
 	Name            string `db:"tracker"`
 	Other           string
 	Path            string
@@ -640,6 +640,26 @@ func (t *Torrent) Fill(tx *sqlx.Tx) error {
 	return nil
 }
 
+func fetchRest(dst Tracker, ts whatapi.TorrentSearch, params url.Values) (
+	r []Torrent, err error) {
+	for {
+		if ts.CurrentPage >= ts.Pages {
+			break
+		}
+		params["page"] = []string{strconv.Itoa(ts.CurrentPage + 1)}
+		ts, err = dst.SearchTorrents("", params)
+		if err != nil {
+			return []Torrent{}, fmt.Errorf("fetchRest: %w", err)
+		}
+		tr, err := NewTorrentSearch(dst, ts)
+		if err != nil {
+			return []Torrent{}, fmt.Errorf("fetchRest: %w", err)
+		}
+		r = append(r, tr...)
+	}
+	return
+}
+
 func (t Torrent) byGroup(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent, error) {
 	// search by group only
 	g := strings.Join(disc.Terms(t.Group.Name), " ")
@@ -658,7 +678,7 @@ func (t Torrent) byGroup(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent, 
 		return []Torrent{},
 			fmt.Errorf("byGroup: %w", err)
 	}
-	if ts.Pages > 1 {
+	if ts.Pages > 5 {
 		fmt.Printf("#    %s: %s (%d pages)\n",
 			dst.Name, name, ts.Pages)
 		a := disc.Terms(strings.Join(t.Artists.Names(), " "))
@@ -674,15 +694,23 @@ func (t Torrent) byGroup(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent, 
 			}
 		}
 	}
-	if ts.Pages > 1 {
+	if ts.Pages > 5 {
 		return []Torrent{},
 			fmt.Errorf(
 				"byGroup: too many results. Pages: %d",
 				ts.Pages)
 	}
-	fmt.Printf("##   %s: %s (%d)\n",
-		dst.Name, name, len(ts.Results))
-	return NewTorrentSearch(dst, ts)
+	r, err := NewTorrentSearch(dst, ts)
+	if err != nil {
+		return []Torrent{}, fmt.Errorf("byGroup: %w", err)
+	}
+	tr, err := fetchRest(dst, ts, params)
+	if err != nil {
+		return []Torrent{}, fmt.Errorf("byGroup: %w", err)
+	}
+	r = append(r, tr...)
+	fmt.Printf("##   %s: %s (%d)\n", dst.Name, name, len(r))
+	return r, nil
 }
 
 func (t Torrent) byArtist(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent, error) {
@@ -705,7 +733,7 @@ func (t Torrent) byArtist(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent,
 			fmt.Errorf("byArtist: %s", err)
 
 	}
-	if ts.Pages > 1 {
+	if ts.Pages > 5 {
 		fmt.Printf("#     %s: %s (%d pages)\n",
 			dst.Name, name, ts.Pages)
 		g := disc.Terms(t.Group.Name)
@@ -721,14 +749,23 @@ func (t Torrent) byArtist(db *sqlx.DB, disc discogs.DB, dst Tracker) ([]Torrent,
 			}
 		}
 	}
-	if ts.Pages > 1 {
+	if ts.Pages > 5 {
 		return []Torrent{},
 			fmt.Errorf(
 				"byArtist: too many results. Pages: %d",
 				ts.Pages)
 	}
+	r, err := NewTorrentSearch(dst, ts)
+	if err != nil {
+		return []Torrent{}, fmt.Errorf("byArtist: %w", err)
+	}
+	tr, err := fetchRest(dst, ts, params)
+	if err != nil {
+		return []Torrent{}, fmt.Errorf("byArtist: %w", err)
+	}
+	r = append(r, tr...)
 	fmt.Printf("##   %s: %s (%d)\n", dst.Name, name, len(ts.Results))
-	return NewTorrentSearch(dst, ts)
+	return r, nil
 }
 
 // Similarity measures how similar two groups are
@@ -1311,29 +1348,6 @@ func NewArtist(tracker Tracker, a whatapi.Artist) (torrents []Torrent, err error
 	return torrents, err
 }
 
-func (t Torrent) UpdateCross(tx *sqlx.Tx, dst Torrent) error {
-	if dst.ID == 0 {
-		_, err := tx.Exec(`
-INSERT INTO crosses
-VALUES(?,?,NULL,NULL,datetime("now"))
-ON CONFLICT (tracker, torrentid) DO NOTHING`,
-			t.Tracker.Name, t.ID)
-		return err
-	}
-	_, err := tx.Exec(`
-INSERT INTO crosses
-VALUES
-(?,?,?,?,datetime("now")),
-(?,?,?,?,datetime("now"))
-ON CONFLICT (tracker, torrentid) DO UPDATE SET
-other = excluded.other,
-otherid = excluded.otherid,
-time=excluded.time`,
-		t.Tracker.Name, t.ID, dst.Tracker.Name, dst.ID,
-		dst.Tracker.Name, dst.ID, t.Tracker.Name, t.ID)
-	return err
-}
-
 func NewTorrentStruct(g Group, t whatapi.TorrentStruct) (Torrent, error) {
 	ttime, err := time.Parse("2006-01-02 15:04:05", t.Time)
 	if err != nil {
@@ -1393,7 +1407,7 @@ func NewGetTorrentStruct(tracker Tracker, tr whatapi.GetTorrentStruct) (Torrent,
 }
 
 func (t Tracker) GetTorrent(id int) (Torrent, error) {
-	tr, err := t.WhatAPI.GetTorrent(id, url.Values{})
+	tr, err := t.Client.GetTorrent(id, url.Values{})
 	if err != nil {
 		return Torrent{}, err
 	}
@@ -1402,7 +1416,7 @@ func (t Tracker) GetTorrent(id int) (Torrent, error) {
 }
 
 func (t Tracker) GetTorrentByHash(h string) (Torrent, error) {
-	tr, err := t.WhatAPI.GetTorrent(0, url.Values{"hash": {h}})
+	tr, err := t.Client.GetTorrent(0, url.Values{"hash": {h}})
 	if err != nil {
 		return Torrent{}, err
 	}
@@ -1444,7 +1458,7 @@ func (t Tracker) GetGroupByHash(h string) ([]Torrent, error) {
 }
 
 func (t Tracker) GetArtist(id int) ([]Torrent, error) {
-	a, err := t.WhatAPI.GetArtist(id, url.Values{})
+	a, err := t.Client.GetArtist(id, url.Values{})
 	if err != nil {
 		return nil, err
 	}
@@ -1453,7 +1467,7 @@ func (t Tracker) GetArtist(id int) ([]Torrent, error) {
 }
 
 func (t Tracker) GetArtistByName(n string) ([]Torrent, error) {
-	a, err := t.WhatAPI.GetArtist(0, url.Values{"artistname": {n}})
+	a, err := t.Client.GetArtist(0, url.Values{"artistname": {n}})
 	if err != nil {
 		return nil, err
 	}
@@ -1547,7 +1561,7 @@ func NewTopTenTorrents(tracker Tracker, tt whatapi.TopTenTorrents) ([]Torrent, e
 }
 
 func (t Tracker) Top10(params url.Values) ([]Torrent, error) {
-	tt, err := t.WhatAPI.GetTopTenTorrents(params)
+	tt, err := t.Client.GetTopTenTorrents(params)
 	if err != nil {
 		return nil, err
 	}
